@@ -15,6 +15,7 @@ HeightMap::HeightMap(std::string name, int RAWHEIGHT, int RAWWIDTH, float HEIGHT
 	numVertices = RAW_WIDTH*RAW_HEIGHT;
 	numIndices = (RAW_WIDTH - 1)*(RAW_HEIGHT - 1) * 6;
 	vertices = new Vector3[numVertices];
+	originalVertices = new Vector3[numVertices];
 	textureCoords = new Vector2[numVertices];
 	colours = new Vector4[numVertices];
 	indices = new GLuint[numIndices];
@@ -28,6 +29,7 @@ HeightMap::HeightMap(std::string name, int RAWHEIGHT, int RAWWIDTH, float HEIGHT
 			int offset = (x * RAW_WIDTH) + z;
 
 			vertices[offset] = Vector3(x * HEIGHTMAP_X, data[offset] * HEIGHTMAP_Y, z *HEIGHTMAP_Z);
+			originalVertices[offset] = Vector3(x * HEIGHTMAP_X, data[offset] * HEIGHTMAP_Y, z *HEIGHTMAP_Z);
 
 			textureCoords[offset] = Vector2(x * HEIGHTMAP_TEX_X, z * HEIGHTMAP_TEX_Z);
 		}
@@ -63,4 +65,11 @@ HeightMap::HeightMap(std::string name, int RAWHEIGHT, int RAWWIDTH, float HEIGHT
 
 HeightMap::~HeightMap()
 {
+}
+
+
+void HeightMap::Scale(float f) {
+	for (int i = 0; i < numVertices; ++i) {
+		vertices[i] = Vector3(originalVertices[i].x,f*originalVertices[i].y,originalVertices[i].z);
+	}
 }

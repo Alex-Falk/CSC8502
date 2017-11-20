@@ -13,8 +13,27 @@ Shader::Shader(string vFile, string fFile, string gFile)
 		objects[SHADER_GEOMETRY] = GenerateShader(gFile, GL_GEOMETRY_SHADER);
 		glAttachShader(program, objects[SHADER_GEOMETRY]);
 	}
+
 	glAttachShader(program, objects[SHADER_VERTEX]);
 	glAttachShader(program, objects[SHADER_FRAGMENT]);
+	SetDefaultAttributes();
+
+}
+
+Shader::Shader(string vFile, string fFile, string cFile, string eFile, string gFile) {
+	program = glCreateProgram();
+	objects[SHADER_VERTEX] = GenerateShader(vFile, GL_VERTEX_SHADER);
+	objects[SHADER_FRAGMENT] = GenerateShader(fFile, GL_FRAGMENT_SHADER);
+	objects[SHADER_CONTROL] = GenerateShader(cFile, GL_TESS_CONTROL_SHADER);
+	objects[SHADER_EVALUATION] = GenerateShader(eFile, GL_TESS_EVALUATION_SHADER);
+	objects[SHADER_GEOMETRY2] = GenerateShader(gFile, GL_GEOMETRY_SHADER);
+
+
+	glAttachShader(program, objects[SHADER_VERTEX]);
+	glAttachShader(program, objects[SHADER_FRAGMENT]);
+	glAttachShader(program, objects[SHADER_CONTROL]);
+	glAttachShader(program, objects[SHADER_EVALUATION]);
+	glAttachShader(program, objects[SHADER_GEOMETRY2]);
 	SetDefaultAttributes();
 
 }
@@ -70,7 +89,7 @@ bool Shader::LoadShaderFile(string from, string &into)
 	ifstream file;
 	string temp;
 
-	cout << "Loading sahder text from " << from << endl << endl;
+	cout << "Loading shader text from " << from << endl << endl;
 
 	file.open(from.c_str());
 	if (!file.is_open()) {
@@ -97,12 +116,34 @@ void Shader::SetDefaultAttributes() {
 }
 
 bool Shader::LinkProgram() {
-	if (loadFailed) {
+if (loadFailed) 
+	{
 		return false;
 	}
-	glLinkProgram(program);
 
+	glLinkProgram(program);
+	
 	GLint code;
 	glGetProgramiv(program, GL_LINK_STATUS, &code);
-	return code == GL_TRUE ? true : false;
+
+	if (code == GL_FALSE)
+	{
+		GLint maxLength = 0;
+		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &maxLength);
+
+		//The maxLength includes the NULL character
+		std::vector<GLchar> infoLog(maxLength);
+		glGetProgramInfoLog(program, maxLength, &maxLength, &infoLog[0]);
+
+		std::cout << "\n";
+		for (std::vector<GLchar>::const_iterator i = infoLog.begin(); i != infoLog.end(); ++i)
+		{
+			std::cout << *i;
+		}
+
+		std::cout << "\n";
+	}
+	
+	bool linked = code == GL_TRUE ? true : false;
+	return linked;
 }

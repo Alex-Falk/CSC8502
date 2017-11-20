@@ -7,9 +7,7 @@ Renderer::Renderer(Window & parent) : OGLRenderer(parent)
 	quad = Mesh::GenerateQuad();
 	textquad = Mesh::GenerateQuad();
 
-	camera = new Camera(0.0f, 0.0f, 0.0f, 0.0f, Vector3(0, 0, 0));//Vector3(RAW_WIDTH * HEIGHTMAP_X / 2.0f, 500, RAW_HEIGHT * HEIGHTMAP_Z));
-
-	//camera->SetPosition(Vector3(10));
+	camera = new Camera(0.0f, 0.0f, 0.0f, 0.0f, Vector3(0, 0, 0));
 
 	quadShader = new Shader(SHADERDIR"TexturedVertex.glsl",
 		SHADERDIR"TexturedFragment.glsl");
@@ -24,9 +22,9 @@ Renderer::Renderer(Window & parent) : OGLRenderer(parent)
 
 	scenes[0] = new RainyScene(this);
 	scenes[1] = new MountainScene(this);
-	scenes[2] = new RainyScene(this);
+	scenes[2] = new VolcanoScene(this);
 
-	currentSceneIdx = 0;
+	currentSceneIdx = 2;
 	currentScene = scenes[currentSceneIdx];
 	currentScene->EnableScene();
 
@@ -158,7 +156,7 @@ void Renderer::NextScene() {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	currentScene = scenes[currentSceneIdx];
-	SetControlledScene(currentSceneIdx);
+	//SetControlledScene(currentSceneIdx);
 	currentScene->ResetScene();
 }
 
@@ -179,7 +177,7 @@ void Renderer::PreviousScene() {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	currentScene = scenes[currentSceneIdx];
-	SetControlledScene(currentSceneIdx);
+	//SetControlledScene(currentSceneIdx);
 	currentScene->ResetScene();
 }
 
@@ -244,7 +242,7 @@ void Renderer::PresentSplitScreen() {
 	root->GetChild(1)->SetTransform(Matrix4::Translation(Vector3(.5f, .5f, 0)));
 	root->GetChild(1)->SetTexture(bufferColourTex[1]);
 
-	root->GetChild(2)->SetModelScale(Vector3(0.1, 0.1, 0.1));
+	root->GetChild(2)->SetModelScale(Vector3(0.5, 0.5, 0.5));
 	root->GetChild(2)->SetTransform(Matrix4::Translation(Vector3(.5f, -.5f, 0)));
 	root->GetChild(2)->SetTexture(bufferColourTex[2]);
 

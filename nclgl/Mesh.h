@@ -29,6 +29,8 @@ public:
 	void SetBumpMap2(GLuint tex) { bumpTexture2 = tex; }
 	GLuint GetBumpMap2() { return bumpTexture2; }
 
+	void SetType(GLuint t) { type = t; }
+
 protected:
 	void BufferData();
 	void GenerateNormals();

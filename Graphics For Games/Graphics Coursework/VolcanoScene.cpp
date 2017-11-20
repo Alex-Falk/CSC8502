@@ -1,168 +1,210 @@
-//#include "VolcanoScene.h"
+#include "VolcanoScene.h"
+
+VolcanoScene::VolcanoScene(Renderer * renderer) : Scene(renderer) {
+
+	camera->SetPosition(Vector3(0, 50, 0));
+
+	tessShader = new Shader(SHADERDIR"terrain_tess_vert.glsl",
+		SHADERDIR"terrain_tess_frag.glsl",
+		SHADERDIR"terrain_tess_ctrl.glsl",
+		SHADERDIR"terrain_tess_eval.glsl",
+		SHADERDIR"terrain_tess_geom.glsl");
+
+	if (!tessShader->LinkProgram()) {
+		return;
+	}
+
+	testShader = new Shader(SHADERDIR"terrain_tess_vert.glsl",
+		SHADERDIR"terrain_tess_frag.glsl");
+
+	if (!testShader->LinkProgram()) {
+		return;
+	}
+
+	skyboxShader = new Shader(SHADERDIR"skyboxVertex.glsl",
+		SHADERDIR"skyboxFragment.glsl");
+
+	if (!skyboxShader->LinkProgram()) {
+		return;
+	}
+
+	quadShader = new Shader(SHADERDIR"TexturedVertex.glsl",
+		SHADERDIR"TexturedFragment.glsl");
+
+	if (!quadShader->LinkProgram()) {
+		return;
+	}
+
+	heightMap	= Mesh::GenerateQuad();
+	heightMap->SetType(GL_PATCHES);
+	quad2		= Mesh::GenerateQuad();
+
+	heightMap->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"grass.png"
+		, SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+
+	heightMap->SetBumpMap(SOIL_load_OGL_texture(TEXTUREDIR"brickDOT3.tga"
+		, SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+
+	glEnable(GL_DEPTH_TEST);
+
+	if (!heightMap->GetTexture()) {
+		return;
+	}
+
+	terrainTex = SOIL_load_OGL_texture(TEXTUREDIR"volcano.png",
+		SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+
+	cubeMap = SOIL_load_OGL_cubemap(
+		TEXTUREDIR"skybox/Right.bmp", TEXTUREDIR"skybox/Left.bmp",
+		TEXTUREDIR"skybox/Top.bmp", TEXTUREDIR"skybox/Bottom.bmp",
+		TEXTUREDIR"skybox/Front.bmp", TEXTUREDIR"skybox/Back.bmp",
+		SOIL_LOAD_RGB,
+		SOIL_CREATE_NEW_ID, 0
+	);
+
+	renderer->SetTextureRepeating(heightMap->GetTexture(), true);
+	renderer->init = true;
+}
+
+VolcanoScene ::~VolcanoScene(void) {
+
+}
+
+void VolcanoScene::UpdateScene(float msec) {
+
+	camera->UpdateCamera(msec);
+	camera->BuildViewMatrix();
+	
+	if (growthTime < maxTime) {
+		growthTime += msec * 0.001f;
+	}
+
+}
+
+void VolcanoScene::RenderScene() {
+
+	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+	renderer->projMatrix = Matrix4::Perspective(1.0f, 22999.0f, (float)renderer->width / (float)renderer->height, 45.0f);
+	renderer->UpdateShaderMatrices();
+
+	DrawSkybox();
+	DrawHeightmap();
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	DrawPostProcess();
+
+	PresentScene();
+}
+
+void VolcanoScene::DrawSkybox() {
+	renderer->viewMatrix = camera->BuildViewMatrix();
+
+	glDepthMask(GL_FALSE);
+	renderer->SetCurrentShader(skyboxShader);
+
+	renderer->UpdateShaderMatrices();
+	quad2->Draw();
+
+	glUseProgram(0);
+	glDepthMask(GL_TRUE);
+}
+
+void VolcanoScene::DrawHeightmap() {
+	renderer->SetCurrentShader(tessShader);
+	glPatchParameteri(GL_PATCH_VERTICES, 4);
+
+	glUniform1i(glGetUniformLocation(renderer->currentShader->GetProgram(), 
+		"diffuseTex"), 0);
+
+	glUniform1i(glGetUniformLocation(renderer->currentShader->GetProgram(),
+		"terrainTex"), 4);
+
+	glUniform1f(glGetUniformLocation(renderer->currentShader->GetProgram(),
+		"heightfrac"), growthTime / maxTime);
+
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, terrainTex);
+
+	renderer->viewMatrix = camera->BuildViewMatrix();
+	renderer->modelMatrix = Matrix4::Rotation(90, Vector3(1, 0, 0)) *
+		Matrix4::Scale(Vector3(10000, 10000, 1));
+	renderer->UpdateShaderMatrices();
+
+	heightMap->Draw();
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glUseProgram(0);
+}
+
+
+//void VolcanoScene::DrawWater() {
+//	renderer->SetCurrentShader(reflectShader);
+//	renderer->SetShaderLight(lights);
 //
-//VolcanoScene::VolcanoScene(Renderer * renderer) : Scene(renderer)
-//{
-//	camera = renderer->camera;
+//	glUniform1f(glGetUniformLocation(renderer->currentShader->GetProgram(), "offset"), offset);
 //
-//	heightMap = new HeightMap(TEXTUREDIR"testTerrain3.data");
-//	quad2 = Mesh::GenerateQuad();
+//	glUniform3fv(glGetUniformLocation(renderer->currentShader->GetProgram(),
+//		"cameraPos"), 1, (float *)& camera->GetPosition());
 //
-//	camera->SetPosition(Vector3(RAW_WIDTH * HEIGHTMAP_X / 2.0f,
-//		RAW_HEIGHT*HEIGHTMAP_Y, RAW_WIDTH * HEIGHTMAP_X));
+//	glUniform1i(glGetUniformLocation(renderer->currentShader->GetProgram(),
+//		"diffuseTex"), 0);
 //
-//	camera->Setmaxheight(2 * RAW_HEIGHT);
+//	glUniform1i(glGetUniformLocation(renderer->currentShader->GetProgram(),
+//		"cubeTex"), 2);
 //
-//	reflectShader = new Shader(SHADERDIR"PerPixelVertex.glsl",
-//		SHADERDIR"reflectFragment.glsl");
-//	skyboxShader = new Shader(SHADERDIR"skyboxVertex.glsl",
-//		SHADERDIR"skyboxFragment.glsl");
-//	quadShader = new Shader(SHADERDIR"TexturedVertex.glsl",
-//		SHADERDIR"TexturedFragment.glsl");
-//	processShader = new Shader(SHADERDIR"processVertex.glsl",
-//		SHADERDIR"sobelFrag.glsl");
-//	//shadowShader = new Shader(SHADERDIR"shadowVert.glsl",
-//	//	SHADERDIR"shadowFrag.glsl");
+//	glActiveTexture(GL_TEXTURE2);
+//	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
 //
-//	if (!reflectShader->LinkProgram()) {
-//		return;
-//	}
+//	float heightX = (heightMap->RAW_WIDTH * HEIGHTMAP_X / 2.0f);
 //
-//	lightShader = new Shader(SHADERDIR"BumpVertex.glsl",
-//		SHADERDIR"BumpFragment.glsl");
+//	float heightY = 256 * heightMap->HEIGHTMAP_Y / 30.0f + (offset / 10.0f);
 //
-//	if (!lightShader->LinkProgram()) {
-//		return;
-//	}
-//	if (!skyboxShader->LinkProgram()) {
-//		return;
-//	}
-//	if (!quadShader->LinkProgram()) {
-//		return;
-//	}
-//	if (!processShader->LinkProgram()) {
-//		return;
-//	}
-//	//if (!shadowShader->LinkProgram()) {
-//	//	return;
-//	//}
+//	float heightZ = (heightMap->RAW_HEIGHT * HEIGHTMAP_Z / 2.0f);
 //
-//	quad2->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"water2.JPG",
-//		SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-//	heightMap->SetTexture(SOIL_load_OGL_texture(
-//		TEXTUREDIR"Barren Reds.jpg", SOIL_LOAD_AUTO,
-//		SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-//	heightMap->SetTexture2(SOIL_load_OGL_texture(
-//		TEXTUREDIR"grass.png", SOIL_LOAD_AUTO,
-//		SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+//	renderer->modelMatrix =
+//		Matrix4::Translation(Vector3(heightX, heightY, heightZ)) *
+//		Matrix4::Scale(Vector3(heightX, 1, heightZ)) *
+//		Matrix4::Rotation(90, Vector3(1.0f, 0.0f, 0.0f));
 //
-//	heightMap->SetBumpMap(SOIL_load_OGL_texture(
-//		TEXTUREDIR"Barren RedsDOT3.jpg", SOIL_LOAD_AUTO,
-//		SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+//	renderer->textureMatrix = Matrix4::Scale(Vector3(10.0f, 10.0f, 10.0f)) *
+//		Matrix4::Rotation(waterRotate, Vector3(0.0f, 0.0f, 1.0f));
 //
-//	heightMap->SetBumpMap2(SOIL_load_OGL_texture(
-//		TEXTUREDIR"grassbumps.png", SOIL_LOAD_AUTO,
-//		SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
+//	renderer->UpdateShaderMatrices();
 //
-//	cubeMap = SOIL_load_OGL_cubemap(
-//		TEXTUREDIR"skybox/Right.bmp", TEXTUREDIR"skybox/Left.bmp",
-//		TEXTUREDIR"skybox/Top.bmp", TEXTUREDIR"skybox/Bottom.bmp",
-//		TEXTUREDIR"skybox/Front.bmp", TEXTUREDIR"skybox/Back.bmp",
-//		SOIL_LOAD_RGB,
-//		SOIL_CREATE_NEW_ID, 0
-//	);
+//	quad2->Draw();
 //
-//	if (!cubeMap || !heightMap->GetTexture() ||
-//		!heightMap->GetTexture2() || !quad2->GetTexture()) {
-//		return;
-//	}
-//
-//	renderer->SetTextureRepeating(quad2->GetTexture(), true);
-//	renderer->SetTextureRepeating(heightMap->GetTexture(), true);
-//	renderer->SetTextureRepeating(heightMap->GetTexture2(), true);
-//	renderer->SetTextureRepeating(heightMap->GetBumpMap(), true);
-//	renderer->SetTextureRepeating(heightMap->GetBumpMap2(), true);
-//
-//	for (int i = 0; i < 4; ++i) {
-//		lights[i] = new Light(Vector3(1000.0f + i*2000.0f,
-//			500.0f, 1000.0f + i*2000.0f),
-//			Vector4(0, 0, 0, 1), Vector4(0, 0, 0, 1), 100.0f);
-//	}
-//	lights[0]->SetPosition(Vector3(0.0f, 500.0f, 0.0f));
-//	lights[0]->SetRadius(1000.0f);
-//
-//	r = 2 * RAW_WIDTH * HEIGHTMAP_X;
-//	lights[1]->SetColour(Vector4(1, 1, 1, 1));
-//	lights[1]->SetPosition(Vector3(RAW_WIDTH * HEIGHTMAP_X, 0.0f, RAW_WIDTH * HEIGHTMAP_Z / 2.0f));
-//	lights[1]->SetRadius(RAW_WIDTH * HEIGHTMAP_X * 8.0f);
-//
-//
-//	lights[2]->SetColour(Vector4(0.2, 0.2, 0.25, 1));
-//	lights[2]->SetPosition(Vector3(-RAW_WIDTH * HEIGHTMAP_X, 0.0f, RAW_WIDTH * HEIGHTMAP_Z / 2.0f));
-//	lights[2]->SetRadius(RAW_WIDTH * HEIGHTMAP_X * 8.0f);
-//
-//	renderer->projMatrix = Matrix4::Perspective(1.0f, 22999.0f,
-//		(float)renderer->width / (float)renderer->height, 45.0f);
-//
-//	// Generate our scene depth texture ...
-//	glGenTextures(1, &bufferDepthTex);
-//	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
-//	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-//	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-//	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-//	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-//	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, renderer->width, renderer->height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
-//
-//	// And our colour texture ...
-//	for (int i = 0; i < 2; ++i) {
-//		glGenTextures(1, &bufferColourTex[i]);
-//		glBindTexture(GL_TEXTURE_2D, bufferColourTex[i]);
-//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-//		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-//		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, renderer->width, renderer->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-//	}
-//
-//	//glGenTextures(1, &shadowTex);
-//	//glBindTexture(GL_TEXTURE_2D, shadowTex);
-//	//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-//	//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-//	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-//
-//	//glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOWSIZE, SHADOWSIZE, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-//	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
-//	//glBindTexture(GL_TEXTURE_2D, 0);
-//
-//	glGenFramebuffers(1, &bufferFBO); // We ’ll render the scene into this
-//									  //glGenFramebuffers(1, &shadowFBO);
-//	glGenFramebuffers(1, &processFBO); // And do post processing in this
-//
-//
-//	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
-//	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, bufferDepthTex, 0);
-//	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, bufferDepthTex, 0);
-//	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex[0], 0);
-//	// We can check FBO attachment success using this command !
-//	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE || !bufferDepthTex || !bufferColourTex[0]) {
-//		return;
-//	}
-//
-//	//glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
-//	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowTex, 0);
-//	//glDrawBuffer(GL_NONE);
-//	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
-//
-//	renderer->init = true;
-//	waterRotate = 0.0f;
-//
-//	glEnable(GL_DEPTH_TEST);
-//	glEnable(GL_BLEND);
-//	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-//	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-//
+//	glUseProgram(0);
 //}
-//
-//
-//VolcanoScene::~VolcanoScene()
-//{
-//}
+
+void VolcanoScene::PresentScene() {
+
+	glBindFramebuffer(GL_FRAMEBUFFER, renderer->bufferFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderer->bufferColourTex[2], 0);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+	renderer->SetCurrentShader(quadShader);
+	renderer->projMatrix = Matrix4::Orthographic(-1, 1, 1, -1, -1, 1);
+	renderer->modelMatrix.ToIdentity();
+	renderer->textureMatrix.ToIdentity();
+	renderer->viewMatrix.ToIdentity();
+	renderer->UpdateShaderMatrices();
+
+	quad->SetTexture(processColourTex);
+
+	quad->Draw();
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glUseProgram(0);
+	ClearNodeLists();
+}
+
+void VolcanoScene::EnableScene() {
+
+}
+
+void VolcanoScene::ResetScene() {
+
+}

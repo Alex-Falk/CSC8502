@@ -18,6 +18,10 @@ public:
 	HeightMap(std::string name,int RAW_WIDTH = 1080, int RAW_HEIGHT = 1080, float HEIGHTMAP_Y = 5.0f);
 	~HeightMap(void);
 
+	void Scale(float factor);
+
+	Vector3* originalVertices;
+
 	int RAW_HEIGHT;
 	int RAW_WIDTH;
 	float HEIGHTMAP_Y;
