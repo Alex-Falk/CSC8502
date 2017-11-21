@@ -2,18 +2,18 @@
 
 VolcanoScene::VolcanoScene(Renderer * renderer) : Scene(renderer) {
 		
-	light = new Light(Vector3(0, 600, 0), Vector4(1, 1, 1, 1), Vector4(1, 1, 1, 1), 1000);
+	light = new Light(Vector3(0, 600, 0), Vector4(1, 1, 1, 1), Vector4(1, 1, 1, 1), 3000);
 
 	camera->SetPosition(Vector3(0, 50, 0));
-	emitter = new SmokeEmitter(SOIL_load_OGL_texture(TEXTUREDIR"lava.jpg",
+	emitter = new SmokeEmitter(SOIL_load_OGL_texture(TEXTUREDIR"lava.png",
 		SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_COMPRESS_TO_DXT), 5);
 	emitter->SetPosition(Vector3(793, YSCALE-50, 780));
-	emitter->SetParticleRate(10.0f);
-	emitter->SetParticleSize(2.0f);
+	emitter->SetParticleRate(5.0f);
+	emitter->SetParticleSize(4.0f);
 	emitter->SetParticleVariance(1.0f);
 	emitter->SetLaunchParticles(2.0f);
 	emitter->SetParticleLifetime(5.0f);
-	emitter->SetParticleSpeed(Vector3(0.125f, 0.25f, 0));
+	emitter->SetParticleSpeed(Vector3(0.1f, 0.2f, 0));
 
 	tessShader = new Shader(SHADERDIR"terraintes/terrain_tess_vert.glsl",
 		SHADERDIR"terraintes/terrain_tess_frag.glsl",
@@ -64,7 +64,7 @@ VolcanoScene::VolcanoScene(Renderer * renderer) : Scene(renderer) {
 	quad2->SetType(GL_PATCHES);
 	skybox		= Mesh::GenerateQuad();
 
-	heightMap->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"Barren Reds.jpg"
+	heightMap->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"lava.jpg"
 		, SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 
 	heightMap->SetTexture2(SOIL_load_OGL_texture(TEXTUREDIR"Rock.jpg"
@@ -73,7 +73,7 @@ VolcanoScene::VolcanoScene(Renderer * renderer) : Scene(renderer) {
 	heightMap->SetBumpMap(SOIL_load_OGL_texture(TEXTUREDIR"barren RedsDOT3.jpg"
 		, SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 
-	quad2->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"water2.JPG",
+	quad2->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"water2.jpg",
 		SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 
 	quad2->SetBumpMap(SOIL_load_OGL_texture(TEXTUREDIR"water2bump.png",
@@ -129,10 +129,13 @@ void VolcanoScene::UpdateScene(float msec) {
 		scalefactor = time / maxTime;
 		emitter->SetPosition(Vector3(793, (scalefactor) * YSCALE - 20, 780));
 	}
-	else {
+	else if (time > maxTime+2 && time < maxTime+4) {
 		if (emitter->GetEnabled()) {
 			emitter->Toggle();
 		}
+	}
+	else {
+		coolingRatio += msec * 0.0001f;
 	}
 	
 	
@@ -170,6 +173,7 @@ void VolcanoScene::DrawSkybox() {
 
 	renderer->UpdateShaderMatrices();
 	skybox->Draw();
+	quad2->Draw();
 
 	glUseProgram(0);
 	glDepthMask(GL_TRUE);
@@ -202,6 +206,9 @@ void VolcanoScene::DrawHeightmap() {
 
 	glUniform1f(glGetUniformLocation(renderer->currentShader->GetProgram(),
 		"yscale"), YSCALE);
+
+	glUniform1f(glGetUniformLocation(renderer->currentShader->GetProgram(),
+		"coolingRatio"), coolingRatio);
 
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, terrainTex);

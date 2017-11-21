@@ -25,7 +25,7 @@ void main(void) {
 
 
 	vec2 texCoord 	= position.xy;
-	float height 	= texture2D(terrainTex,texCoord).a;
+	float height 	= texture(terrainTex,texCoord).a;
 	gl_Position 	= vec4(position.x,position.y, height, 1.0);
 
 }

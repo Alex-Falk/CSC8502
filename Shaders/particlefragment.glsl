@@ -12,16 +12,16 @@ in Vertex	{
 	vec3 worldPos ;
 } IN;
 
-out vec4 gl_FragColor;
+out vec4 fragColor;
 
 void main(void)	{
 	vec3 incident 		= normalize (lightPos - IN . worldPos);
 	vec4 diffuse 		= IN.colour* texture(diffuseTex, IN.texCoord);
 
 	if (degrees(acos(dot(-incident,lightDirection))) > lightfov) {
-		gl_FragColor 	= vec4(0.1,0.1,0.1,1)*diffuse;
+		fragColor 	= vec4(0.1,0.1,0.1,1)*diffuse;
 	} 
 	else {
-		gl_FragColor 	= diffuse;
+		fragColor 	= diffuse;
 	}
 }	

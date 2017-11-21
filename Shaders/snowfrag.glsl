@@ -9,10 +9,10 @@ in Vertex	{
 	vec3 worldPos ;
 } IN;
 
-out vec4 gl_FragColor;
+out vec4 fragColor;
 
 void main(void)	{
 	vec4 diffuse 		= texture2D(diffuseTex, IN.texCoord);
 
-	gl_FragColor 		= diffuse;
+	fragColor 		= diffuse;
 }	

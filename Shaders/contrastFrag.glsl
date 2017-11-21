@@ -16,7 +16,7 @@ vec4 brightnessConstrast(vec4 value, float brightness, float constrast) {
 
 void main()
 {
-    vec4 diffuse    = texture2D(diffuseTex,IN.texCoord);
+    vec4 diffuse    = texture(diffuseTex,IN.texCoord);
 
     FragColor       = brightnessConstrast(diffuse,brightness,contrast);
 } 

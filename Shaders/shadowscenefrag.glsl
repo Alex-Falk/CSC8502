@@ -21,7 +21,7 @@ in Vertex {
 	vec4 shadowProj ; // New !
 } IN ;
 
-out vec4 gl_FragColor ;
+out vec4 fragColor ;
 
 void main ( void ) {
 	mat3 TBN 			= mat3 ( IN . tangent , IN . binormal , IN . normal );
@@ -60,20 +60,20 @@ void main ( void ) {
 	
 	vec3 colour 		= ( diffuse . rgb * lightColour . rgb );
 	colour 				+= ( lightColour . rgb * sFactor ) * 0.33;
-	gl_FragColor 		= vec4 ( colour * atten * lambert , diffuse . a );
-	gl_FragColor . rgb 	+= ( diffuse . rgb * lightColour . rgb ) * 0.1;
+	fragColor 		= vec4 ( colour * atten * lambert , diffuse . a );
+	fragColor . rgb 	+= ( diffuse . rgb * lightColour . rgb ) * 0.1;
 
 	// if (IN.shadowProj.w < IN.shadowProj.y) {
-	// 	gl_FragColor 	+= vec4(0.3,0,0,1);
+	// 	fragColor 	+= vec4(0.3,0,0,1);
 	// }
 	// if (IN.shadowProj.w > IN.shadowProj.y) {
-	// 	gl_FragColor 	+= vec4(0,0.3,0,1);
+	// 	fragColor 	+= vec4(0,0.3,0,1);
 	// }
 	// if (IN.shadowProj.w < IN.shadowProj.x) {
-	// 	gl_FragColor 	+= vec4(0.3,0.3,0.3,1);
+	// 	fragColor 	+= vec4(0.3,0.3,0.3,1);
 	// }
 	// if (IN.shadowProj.w < IN.shadowProj.x) {
-	// 	gl_FragColor 	+= vec4(0,0,0.3,1);
+	// 	fragColor 	+= vec4(0,0,0.3,1);
 	// }
 
 	// vec3 basePos 	= vec3(lightPos.x,IN.worldPos.y,lightPos.z);
@@ -94,7 +94,7 @@ void main ( void ) {
 	// 	vec3 Lint 	= cameraPos + (t*v);
 
 	// 	if (Lint.y > 0 && Lint.y < lightPos.y) {
-	// 		gl_FragColor	+= vec4(0.1,0.1,0.1,1);
+	// 		fragColor	+= vec4(0.1,0.1,0.1,1);
 	// 	}
 	// }
 }

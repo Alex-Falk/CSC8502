@@ -11,7 +11,7 @@ uniform vec3 lightPos ;
 uniform vec4 lightColour ;
 
 in mat4 inverseProjView ;
-out vec4 gl_FragColor [2];
+out vec4 fragColor [2];
 
 void main ( void ) {
 	vec3 pos = vec3 (( gl_FragCoord . x * pixelSize . x ) ,
@@ -38,6 +38,6 @@ void main ( void ) {
 	float rFactor = clamp ( dot ( halfDir , normal ) ,0.0 ,1.0);
 	float sFactor = pow ( rFactor , 33.0 );
 
-	gl_FragColor [0] = vec4 ( lightColour . xyz * lambert * atten , 1.0);
-	gl_FragColor [1] = vec4 ( lightColour . xyz * sFactor * atten *0.,1.0);
+	fragColor [0] = vec4 ( lightColour . xyz * lambert * atten , 1.0);
+	fragColor [1] = vec4 ( lightColour . xyz * sFactor * atten *0.,1.0);
 }

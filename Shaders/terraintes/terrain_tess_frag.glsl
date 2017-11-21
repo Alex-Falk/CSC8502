@@ -11,6 +11,8 @@ uniform vec4 specColour;
 uniform vec3 lightPos;
 uniform float lightRadius;
 
+uniform float coolingRatio;
+
 in Vertex {
 	vec2 texCoord;
 	vec3 normal;
@@ -20,16 +22,19 @@ in Vertex {
 	vec3 position;
 } IN;
 
-out vec4 gl_FragColor;
+out vec4 fragColor;
 
 void main(void) {
 
 	float sFac 				= 33.0f;
-	vec4 rock 				= texture2D(rockTex,IN.texCoord);
-	vec4 grass 				= texture2D(grassTex,IN.texCoord);
-	vec4 bump 				= texture2D(rockBumpTex,IN.texCoord);
+	vec4 rock 				= texture(rockTex,IN.texCoord);
+	vec4 grass 				= texture(grassTex,IN.texCoord);
+	vec4 bump 				= texture(rockBumpTex,IN.texCoord);
 	float mixratio 			= IN.normal.y;
 
+	if (coolingRatio > 0.0) {
+		mixratio = clamp(mixratio + coolingRatio,0,1);
+	}
 	
 	vec4 diffuse 		= mix(rock,mix(grass,vec4(0,0,0,1),0.5),mixratio);
 
@@ -57,5 +62,5 @@ void main(void) {
 	newColour.rgb	+= (diffuse.rgb * lightColour.rgb);
 
 
-	gl_FragColor = newColour;//texture(terrainTex, IN.texCoord);
+	fragColor = newColour;//texture(terrainTex, IN.texCoord);
 }

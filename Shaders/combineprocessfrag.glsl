@@ -18,15 +18,15 @@ out vec4 FragColor;
 
 void main()
 {
-	vec4 diffuse 		= texture2D(diffuseTex,IN.texCoord);
+	vec4 diffuse 		= texture(diffuseTex,IN.texCoord);
 	vec4 sobel 			= vec4(0,0,0,0);
 	vec4 contrast 		= vec4(0,0,0,0);
 
 	if (isSobel) {
-		sobel 			= texture2D(sobelTex,IN.texCoord)-diffuse;
+		sobel 			= texture(sobelTex,IN.texCoord)-diffuse;
 	}
 	if (isContrast) {
-		contrast 		= texture2D(contrastTex,IN.texCoord)-diffuse;
+		contrast 		= texture(contrastTex,IN.texCoord)-diffuse;
 	}
 
 	FragColor 			= contrast+sobel+diffuse;

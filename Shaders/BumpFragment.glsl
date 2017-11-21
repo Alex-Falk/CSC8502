@@ -26,10 +26,10 @@ in Vertex {
 	//vec4 shadowProj;
 } IN ;
 
-out vec4 gl_FragColor ;
+out vec4 fragColor ;
 
 void main ( void ) {
-	gl_FragColor	= vec4(0,0,0,1);
+	fragColor	= vec4(0,0,0,1);
 	vec3 normal 	= vec3(0,0,0);
 	float sFac 		= 0;
 	float ratio		= 0.0;
@@ -95,9 +95,9 @@ void main ( void ) {
 		vec4 newColour 		= vec4 (colour * atten * lambert , diffuse.a);
 		newColour.rgb		+= (diffuse.rgb * lightColour[i].rgb) * 0.025;
 
-		gl_FragColor 		+= newColour;
+		fragColor 		+= newColour;
 	}
 
-	//gl_FragColor *= vec4(1.2,1.2,1.2,1);
+	//fragColor *= vec4(1.2,1.2,1.2,1);
 
 }

@@ -18,7 +18,7 @@ in Vertex {
 	vec3 worldPos ;
 } IN ;
 
-out vec4 gl_FragColor ;
+out vec4 fragColor ;
 
 void main ( void ) {
 	vec4 diffuse = vec4(0,0,1,1);
@@ -43,6 +43,6 @@ void main ( void ) {
 
 		newColour 		+= ( lightColour[i] * diffuse * atten )*( diffuse + reflection );
 	}
-	gl_FragColor = newColour * .5;
-	gl_FragColor.a = gl_FragColor.a / 4.;
+	fragColor = newColour * .5;
+	fragColor.a = fragColor.a / 4.;
 }

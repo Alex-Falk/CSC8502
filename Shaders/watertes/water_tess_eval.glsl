@@ -41,11 +41,10 @@ void main(void) {
 	vec2 texCoord 		= (pos.xy+1)/2.0;
 	OUT.texCoord 		= texCoord/2;
 
-	vec2 direction 		= normalize(vec2(1,1)-vec2(0,0));
+	vec2 diagonal 		= normalize(vec2(1,1)-vec2(0,0));
+	vec2 toCenter		= normalize(vec2(0.5,0.5)-vec2(texCoord.x,texCoord.y));
 	float height 		= sinWave(vec2(1,0), vec2(texCoord.x,texCoord.y),1, 10,time/5.0, 0.1)
-							+ sinWave(direction, vec2(texCoord.x,texCoord.y),1, 10,time/5.0, 0.1);
-
-//sin(10*(texCoord.x+(time/5.0))+0.1)
+							+ sinWave(diagonal, vec2(texCoord.x,texCoord.y),1, 10,time/5.0, 0.1);
 
 	vec3 position 		= vec3(texCoord, height);
 

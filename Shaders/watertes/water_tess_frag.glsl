@@ -19,7 +19,7 @@ in Vertex {
 	vec3 position;
 } IN;
 
-out vec4 gl_FragColor;
+out vec4 fragColor;
 
 void main(void) {
 
@@ -28,8 +28,8 @@ void main(void) {
 	//vec3 lightPos			= vec3(0,400,0);
 	//float lightRadius 		= 10000;
 	float sFac 				= 5000.0f;
-	vec4 diffuse			= texture2D(waterTex,IN.texCoord);
-	vec4 bump 				= texture2D(waterBumpTex,IN.texCoord);
+	vec4 diffuse			= texture(waterTex,IN.texCoord);
+	vec4 bump 				= texture(waterBumpTex,IN.texCoord);
 
 	mat3 TBN	 		= mat3(IN.tangent, IN.binormal, IN.normal);
 
@@ -54,9 +54,10 @@ void main(void) {
 	vec3 colour 	= (diffuse.rgb * lightColour.rgb);
 	colour 			+= (specColour.rgb * sFactor) * 0.1;
 	
-	vec4 newColour 	= vec4 (colour * atten * lambert , diffuse.a);
+	vec4 newColour 	= vec4 (colour * atten * lambert , diffuse.a)*(diffuse+reflection);
 	newColour.rgb	+= (diffuse.rgb * lightColour.rgb);
 
 
-	gl_FragColor = newColour;//texture(terrainTex, IN.texCoord);
+	fragColor = newColour*0.5;//texture(terrainTex, IN.texCoord);
+	fragColor.a = 0.98*fragColor.a;
 }

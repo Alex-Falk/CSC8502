@@ -53,7 +53,7 @@ protected:
 	float				time = 0.0f;
 	float				maxTime = 30.0f;
 	float				scalefactor = 0.0f;
-
+	float				coolingRatio = 0.0f;
 	float				waterRotate = 0.0f;
 
 

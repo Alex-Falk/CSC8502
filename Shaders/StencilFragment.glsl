@@ -6,7 +6,7 @@ in Vertex {
 	vec2 texCoord;
 } IN;
 
-out vec4 gl_FragColor;
+out vec4 fragColor;
 
 void main(void) {
 	vec4 value = texture(diffuseTex, IN.texCoord).rgba;
@@ -14,5 +14,5 @@ void main(void) {
 	if(value.a == 0.0) {
 		discard;
 	}
-	gl_FragColor = value;
+	fragColor = value;
 }

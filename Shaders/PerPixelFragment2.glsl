@@ -12,10 +12,10 @@ in Vertex {
 	vec3 worldPos ;
 } IN ;
 
-out vec4 gl_FragColor ;
+out vec4 fragColor ;
 
 void main ( void ) {
-	gl_FragColor = vec4(0,0,0,1);
+	fragColor = vec4(0,0,0,1);
 	vec4 lightColour 	 	= vec4(1,1,1,1);
 	vec4 specColour 	 	= vec4(1,1,1,1);
 	vec3 lightPos			= vec3(0,5000,0);
@@ -30,7 +30,7 @@ void main ( void ) {
 	float dist = length(lightPos - IN.worldPos );
 	float atten = 1.0 - clamp (dist / lightRadius, 0.2, 1.0);
 
-	gl_FragColor += ( lightColour * diffuse * atten )*( diffuse + reflection );
-	gl_FragColor.a = gl_FragColor.a * 0.8;
+	fragColor += ( lightColour * diffuse * atten )*( diffuse + reflection );
+	fragColor.a = fragColor.a * 0.8;
 
 }
