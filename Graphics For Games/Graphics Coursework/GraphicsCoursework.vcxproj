@@ -75,8 +75,9 @@
     <ClInclude Include="RainyScene.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Scene.h" />
+    <ClInclude Include="SmokeEmitter.h" />
+    <ClInclude Include="Terrain.h" />
     <ClInclude Include="TextMesh.h" />
-    <ClInclude Include="UFO.h" />
     <ClInclude Include="VolcanoScene.h" />
   </ItemGroup>
   <ItemGroup>
@@ -87,8 +88,9 @@
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Coursework.cpp" />
+    <ClCompile Include="SmokeEmitter.cpp" />
+    <ClCompile Include="Terrain.cpp" />
     <ClCompile Include="TextMesh.cpp" />
-    <ClCompile Include="UFO.cpp" />
     <ClCompile Include="VolcanoScene.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

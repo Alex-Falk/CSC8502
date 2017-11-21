@@ -17,7 +17,7 @@ ParticleEmitter::ParticleEmitter(GLuint texture, float rad)	{
 	particleSize		= 24.0f;
 	particleVariance	= 0.2f;
 	nextParticleTime	= 0.0f;
-	particleSpeed		= 0.4f;
+	particleSpeed		= Vector3(0,0.4f,0);
 	numLaunchParticles	= 10;
 	largestSize			= 0;
 	emitterRadius		= rad;
@@ -98,7 +98,7 @@ void ParticleEmitter::Update(float msec)	{
 			//position by multiplying its normalised direction by the
 			//particle speed, and adding the result to the position. Easy!
 
-			p->position +=  p->direction*(msec*particleSpeed);
+			p->position +=  p->direction*(particleSpeed*msec);
 
 
 			++i;	//Only update our iterator value here.
@@ -146,7 +146,9 @@ Particle* ParticleEmitter::GetFreeParticle()	{
 	p->direction.z += (0);
 
 	p->direction.Normalise();	//Keep its direction normalised!
-	p->position		= emitterPosition + Vector3((2*RAND()-1)*(emitterRadius), (2 * RAND() - 1)*20,(2 * RAND() - 1)*(emitterRadius));
+	p->position		= emitterPosition + Vector3((2*RAND()-1)*(emitterRadius), 0,(2 * RAND() - 1)*(emitterRadius));
+	p->lifetime		= particleLifetime;
+	p->velocity		= particleSpeed;
 
 	return p;	//return the new particle :-)
 }

@@ -2,6 +2,10 @@
 #include "Scene.h"
 #include "Renderer.h"
 #include "ParticleEmitter.h"
+#include "SmokeEmitter.h"
+
+#define NPATCHES 16.0f
+#define YSCALE 350.0f
 
 class Scene;
 class HeightMap;
@@ -24,15 +28,21 @@ protected:
 	void				DrawWater();
 	void				DrawSkybox();
 	void				PresentScene();
+	void				DrawSmoke();
 
 	Shader *			tessShader;
 	Shader *			skyboxShader;
 	Shader *			testShader;
+	Shader *			reflectShader;
+	Shader *			particleShader;
 
-	ParticleEmitter *	emitter;
+	SmokeEmitter *		emitter;
+
+	Light *				light;
 
 	Mesh *				heightMap;
 	Mesh *				quad2;
+	Mesh *				skybox;
 
 	Light *				lights[5];
 
@@ -40,8 +50,11 @@ protected:
 	GLuint				terrainTex;
 	GLuint				terrainNormalTex;
 
-	float				growthTime = 0.0f;
-	float				maxTime = 20.0f;
+	float				time = 0.0f;
+	float				maxTime = 30.0f;
+	float				scalefactor = 0.0f;
+
+	float				waterRotate = 0.0f;
 
 
 };

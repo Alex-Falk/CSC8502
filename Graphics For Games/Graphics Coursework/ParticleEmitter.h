@@ -50,6 +50,8 @@ struct Particle {
 	Vector3 position;
 	Vector4 colour;
 	Vector3 direction;
+	float lifetime;
+	Vector3 velocity;
 };
 
 class ParticleEmitter : public Mesh	{
@@ -62,7 +64,7 @@ public:
 	function - which has a msec float, just like the other 
 	updating functions you've seen.
 	*/
-	void Update(float msec);
+	virtual void Update(float msec);
 
 	virtual void Draw();
 
@@ -96,8 +98,8 @@ public:
 	/*
 	Linear velocity of the particle
 	*/
-	float	GetParticleSpeed()				{return particleSpeed;}
-	void	SetParticleSpeed(float speed)	{particleSpeed = speed;}
+	Vector3	GetParticleSpeed()				{return particleSpeed;}
+	void	SetParticleSpeed(Vector3 speed)	{particleSpeed = speed;}
 
 	/*
 	How many particles does the emitter launch when it hits it's update time
@@ -128,7 +130,7 @@ protected:
 	This is the magic of our free list. If there's a particle 'spare',
 	this function will return that, otherwise it'll return a 'new' one
 	*/
-	Particle* GetFreeParticle();
+	virtual Particle* GetFreeParticle();
 
 	/*
 	Resizes our vertex buffers
@@ -139,7 +141,7 @@ protected:
 	float particleLifetime;
 	float particleSize;
 	float particleVariance;
-	float particleSpeed;
+	Vector3 particleSpeed;
 	float emitterRadius;
 	float destructionHeight;
 	int	  numLaunchParticles;

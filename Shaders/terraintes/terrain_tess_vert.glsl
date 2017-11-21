@@ -12,7 +12,6 @@ in vec2 texCoord;
 in vec3 normal;
 in vec3 tangent;
 
-uniform float heightfrac;
 
 // out Vertex {
 // 	vec3 vPos;
@@ -26,7 +25,7 @@ void main(void) {
 
 
 	vec2 texCoord 	= position.xy;
-	float height 	= texture2D(terrainTex,texCoord).x;
+	float height 	= texture2D(terrainTex,texCoord).a;
 	gl_Position 	= vec4(position.x,position.y, height, 1.0);
 
 }

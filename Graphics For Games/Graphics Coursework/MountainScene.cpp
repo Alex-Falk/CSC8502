@@ -328,7 +328,7 @@ void MountainScene::DrawSnow()
 	emitter->SetParticleVariance(1.0f);
 	emitter->SetLaunchParticles(2.0f);
 	emitter->SetParticleLifetime(2000.0f);
-	emitter->SetParticleSpeed(0.1f);
+	emitter->SetParticleSpeed(Vector3(0.0f,0.1f,0.0f));
 
 	renderer->UpdateShaderMatrices();
 

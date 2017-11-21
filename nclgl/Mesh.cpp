@@ -89,13 +89,46 @@ Mesh * Mesh::GenerateQuad()
 	m->textureCoords[2] = Vector2(1.0f, 1.0f);
 	m->textureCoords[3] = Vector2(1.0f, 0.0f);
 
-	//m->colours = new Vector4[m->numVertices];
-	//m->colours[0] = Vector4(1.0f, 0.0f, 0.0f, 1.0f);
-	//m->colours[1] = Vector4(0.0f, 1.0f, 0.0f, 1.0f);
-	//m->colours[2] = Vector4(0.0f, 0.0f, 1.0f, 1.0f);
-	//m->colours[3] = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-
 	for (int i = 0; i < 4; ++i) {
+		m->colours[i] = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+		m->normals[i] = Vector3(0.0f, 0.0f, -1.0f);
+		m->tangents[i] = Vector3(1.0f, 0.0f, 0.0f);
+	}
+
+	m->BufferData();
+	return m;
+}
+
+Mesh * Mesh::GeneratePlane(int size) {
+	Mesh* m = new Mesh();
+	m->numVertices = 4 * size * size;
+	m->type = GL_TRIANGLE_STRIP;
+
+	m->vertices = new Vector3[m->numVertices];
+	m->textureCoords = new Vector2[m->numVertices];
+	m->colours = new Vector4[m->numVertices];
+	m->normals = new Vector3[m->numVertices];
+	m->tangents = new Vector3[m->numVertices];
+
+	int c = 0;
+
+	for (int i = 0; i < size; ++i) {
+		for (int j = 0; j < size; ++j) {
+			m->vertices[c] = Vector3(-1.0f + (2 * i), -1.0f + (2 * j), 0.0f);
+			m->vertices[c + 1] = Vector3(-1.0f + (2 * i), 1.0f + (2 * j), 0.0f);
+			m->vertices[c + 2] = Vector3(1.0f + (2 * i), -1.0f + (2 * j), 0.0f);
+			m->vertices[c + 3] = Vector3(1.0f + (2 * i), 1.0f + (2 * j), 0.0f);
+
+			m->textureCoords[c] = Vector2(0.0f, 1.0f);
+			m->textureCoords[c + 1] = Vector2(0.0f, 0.0f);
+			m->textureCoords[c + 2] = Vector2(1.0f, 1.0f);
+			m->textureCoords[c + 3] = Vector2(1.0f, 0.0f);
+
+			c += 4;
+		}
+	}
+
+	for (int i = 0; i < m->numVertices; ++i) {
 		m->colours[i] = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
 		m->normals[i] = Vector3(0.0f, 0.0f, -1.0f);
 		m->tangents[i] = Vector3(1.0f, 0.0f, 0.0f);

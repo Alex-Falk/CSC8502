@@ -351,7 +351,7 @@ void RainyScene::DrawRain()
 	emitter->SetParticleVariance(1.0f);
 	emitter->SetLaunchParticles(16.0f);
 	emitter->SetParticleLifetime(2000.0f);
-	emitter->SetParticleSpeed(1.0f);
+	emitter->SetParticleSpeed(Vector3(0,1.0f,0));
 
 	renderer->UpdateShaderMatrices();
 

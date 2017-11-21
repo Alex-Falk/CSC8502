@@ -14,7 +14,7 @@ layout(vertices = 4) out;
 
 void main(void) {
 	//OUT[ID].tcPos = IN[ID].vPos;
-	int num = 256;
+	int num = 128;
 	if(ID == 0) {
 		gl_TessLevelInner[0] = num;
 		gl_TessLevelInner[1] = num;

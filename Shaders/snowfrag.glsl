@@ -12,7 +12,7 @@ in Vertex	{
 out vec4 gl_FragColor;
 
 void main(void)	{
-	vec4 diffuse 		= IN.colour * texture(diffuseTex, IN.texCoord);
+	vec4 diffuse 		= texture2D(diffuseTex, IN.texCoord);
 
 	gl_FragColor 		= diffuse;
 }	

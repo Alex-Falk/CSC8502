@@ -27,9 +27,6 @@
     <ClInclude Include="TextMesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="UFO.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="VolcanoScene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -40,6 +37,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Floor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Terrain.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SmokeEmitter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -59,9 +62,6 @@
     <ClCompile Include="TextMesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="UFO.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="VolcanoScene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -72,6 +72,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Floor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Terrain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SmokeEmitter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
