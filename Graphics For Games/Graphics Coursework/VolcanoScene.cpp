@@ -1,9 +1,10 @@
 #include "VolcanoScene.h"
 
 VolcanoScene::VolcanoScene(Renderer * renderer) : Scene(renderer) {
-		
-	//light = new Light(Vector3(0, 600, 0), Vector4(1, 1, 1, 1), Vector4(1, 1, 1, 1), 3000);
-
+	
+	// ------------------------------------------------------------------------------------------------------------------
+	// SCENE SET UP
+	// ------------------------------------------------------------------------------------------------------------------
 
 	camera->SetPosition(Vector3(144, 63, 1540));
 	camera->SetPitch(11);
@@ -11,12 +12,16 @@ VolcanoScene::VolcanoScene(Renderer * renderer) : Scene(renderer) {
 	emitter = new SmokeEmitter(SOIL_load_OGL_texture(TEXTUREDIR"lava.jpg",
 		SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_COMPRESS_TO_DXT), 5);
 	emitter->SetPosition(Vector3(793, YSCALE-50, 780));
-	emitter->SetParticleRate(5.0f);
+	emitter->SetParticleRate(4.0f);
 	emitter->SetParticleSize(2.0f);
 	emitter->SetParticleVariance(1.0f);
 	emitter->SetLaunchParticles(2.0f);
 	emitter->SetParticleLifetime(5.0f);
 	emitter->SetParticleSpeed(Vector3(0.1f, 0.2f, 0));
+
+	// ------------------------------------------------------------------------------------------------------------------
+	// SHADERS
+	// ------------------------------------------------------------------------------------------------------------------
 
 	tessShader = new Shader(SHADERDIR"terraintes/terrain_tess_vert.glsl",
 		SHADERDIR"terraintes/terrain_tess_frag.glsl",
@@ -51,13 +56,13 @@ VolcanoScene::VolcanoScene(Renderer * renderer) : Scene(renderer) {
 		return;
 	}
 
-	reflectShader = new Shader(SHADERDIR"watertes/water_tess_vert.glsl",
+	waterTessShader = new Shader(SHADERDIR"watertes/water_tess_vert.glsl",
 		SHADERDIR"watertes/water_tess_frag.glsl",
 		SHADERDIR"watertes/water_tess_ctrl.glsl",
 		SHADERDIR"watertes/water_tess_eval.glsl",
 		SHADERDIR"watertes/water_tess_geom.glsl");
 
-	if (!reflectShader->LinkProgram()) {
+	if (!waterTessShader->LinkProgram()) {
 		return;
 	}
 
@@ -75,6 +80,10 @@ VolcanoScene::VolcanoScene(Renderer * renderer) : Scene(renderer) {
 		return;
 	}
 
+
+	// ------------------------------------------------------------------------------------------------------------------
+	// TEXTURES AND MESHES
+	// ------------------------------------------------------------------------------------------------------------------
 	float patches = NPATCHES;
 	heightMap	= Mesh::GeneratePlane(patches);
 	heightMap->SetType(GL_PATCHES);
@@ -230,7 +239,7 @@ void VolcanoScene::FillBuffers() {
 	DrawSkybox();
 	DrawHeightmap();
 	DrawWater();
-	DrawSmoke();
+	DrawLava();
 
 
 	glUseProgram(0);
@@ -308,7 +317,7 @@ void VolcanoScene::DrawHeightmap() {
 }
 
 void VolcanoScene::DrawWater() {
-	renderer->SetCurrentShader(reflectShader);
+	renderer->SetCurrentShader(waterTessShader);
 	glPatchParameteri(GL_PATCH_VERTICES, 4);
 
 	glUniform3fv(glGetUniformLocation(renderer->currentShader->GetProgram(),
@@ -340,7 +349,7 @@ void VolcanoScene::DrawWater() {
 	glUseProgram(0);
 }
 
-void VolcanoScene::DrawSmoke()
+void VolcanoScene::DrawLava()
 {
 	glClearColor(0, 0, 0, 1);
 	renderer->SetCurrentShader(particleShader);
@@ -388,27 +397,27 @@ void VolcanoScene::DrawPointLights() {
 	vector<Particle *> particles = emitter->GetParticles();
 	for (int i = 0; i < particles.size(); ++i) {
 		Particle *p = particles[i];
-		pointLights.push_back(new Light(p->position, Vector4(0.698, 0.133, 0.133, 1), Vector4(0.698, 0.133, 0.133, 1), 50));
+		pointLights.push_back(Light(p->position, Vector4(0.698, 0.133, 0.133, 1), Vector4(0.698, 0.133, 0.133, 1), 50));
 	}
 
-	pointLights.push_back(new Light(emitter->GetPosition()+Vector3(0,40,0), Vector4(0.698, 0.133, 0.133, 1), Vector4(0.698, 0.133, 0.133, 1), 400));
-	pointLights.push_back(new Light(Vector3(0, 3000, 0), Vector4(0.7, 0.7, 0.7, 1), Vector4(1, 1, 1, 1), 8000));
+	pointLights.push_back(Light(emitter->GetPosition()+Vector3(0,40,0), Vector4(0.698, 0.133, 0.133, 1), Vector4(0.698, 0.133, 0.133, 1), 400));
+	pointLights.push_back(Light(Vector3(0, 3000, 0), Vector4(0.7, 0.7, 0.7, 1), Vector4(1, 1, 1, 1), 8000));
 
 	for (int i = 0; i < pointLights.size(); ++i) {
-		Light *l = pointLights[i];
-		float r = l->GetRadius();
+		Light l = pointLights[i];
+		float r = l.GetRadius();
 
 		renderer->projMatrix = Matrix4::Perspective(1.0f, 22999.0f, (float)renderer->width / (float)renderer->height, 45.0f);
-		renderer->modelMatrix = Matrix4::Translation(l->GetPosition()) *
+		renderer->modelMatrix = Matrix4::Translation(l.GetPosition()) *
 			Matrix4::Scale(Vector3(r, r, r));
 		 
-		l->SetPosition(renderer->modelMatrix.GetPositionVector());
+		l.SetPosition(renderer->modelMatrix.GetPositionVector());
 
-		renderer->SetSingleShaderLight(*l);
+		renderer->SetSingleShaderLight(l);
 
 		renderer->UpdateShaderMatrices();
 
-		float dist = (l->GetPosition() - camera->GetPosition()).Length();
+		float dist = (l.GetPosition() - camera->GetPosition()).Length();
 		if (dist < r) {
 			glCullFace(GL_FRONT);
 		}

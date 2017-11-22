@@ -3,19 +3,30 @@
 
 Scene::Scene(Renderer * renderer)
 {
+	// Use the renderer provided (all scenes use the same renderer)
 	this->renderer = renderer;
+	
+	// The root of this Scene
 	root = new SceneNode;
+
+	// A Quad to draw the Scene to a framebuffer
 	quad = Mesh::GenerateQuad();
 
 	camera = camera = new Camera(0.0f, 0.0f, 0.0f, 0.0f, Vector3(0, 0, 0));
 
+	// ------------------------------------------------------------------------------------------------------------------
+	// SHADERS
+	// ------------------------------------------------------------------------------------------------------------------
+
+	// For Drawing the quad
 	quadShader = new Shader(SHADERDIR"TexturedVertex.glsl",
 		SHADERDIR"TexturedFragment.glsl");
-
+	
 	if (!quadShader->LinkProgram()) {
 		return;
 	}
 
+	// For Sobel post processing filter
 	sobelShader = new Shader(SHADERDIR"processVertex.glsl",
 		SHADERDIR"sobelFrag.glsl");
 
@@ -23,6 +34,7 @@ Scene::Scene(Renderer * renderer)
 		return;
 	}
 
+	// For drawing the constrast post processing filter
 	contrastShader = new Shader(SHADERDIR"processVertex.glsl",
 		SHADERDIR"contrastFrag.glsl");
 
@@ -30,12 +42,18 @@ Scene::Scene(Renderer * renderer)
 		return;
 	}
 
+	// For combining the post process filters
 	combineProcessShader = new Shader(SHADERDIR"processVertex.glsl",
 		SHADERDIR"combineprocessfrag.glsl");
 
 	if (!combineProcessShader->LinkProgram()) {
 		return;
 	}
+
+
+	// ------------------------------------------------------------------------------------------------------------------
+	// FRAME BUFFERS AND TEXTURES
+	// ------------------------------------------------------------------------------------------------------------------
 
 
 	GenerateScreenTexture(bufferDepthTex, true);
@@ -64,6 +82,20 @@ Scene::Scene(Renderer * renderer)
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
+}
+
+Scene::~Scene() {
+	delete root;
+	delete quad;
+	delete quadShader;
+	delete sobelShader;
+	delete combineProcessShader;
+
+	glDeleteTextures(3, bufferColourTex);
+	glDeleteTextures(1, &bufferDepthTex);
+	glDeleteTextures(1, &processColourTex);
+	glDeleteFramebuffers(1, &bufferFBO);
+	glDeleteFramebuffers(1, &processFBO);
 }
 
 void Scene::BuildNodeLists(SceneNode * from) {
@@ -121,6 +153,7 @@ void Scene::DrawPostProcess(GLuint * texture) {
 	glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
+	// Sobel processing effect - draw into texture 2
 	if (renderer->sobelOn) {
 		renderer->SetCurrentShader(sobelShader);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex[1], 0);
@@ -135,6 +168,7 @@ void Scene::DrawPostProcess(GLuint * texture) {
 		quad->Draw();
 	}
 
+	// Contrast processing effect - draw into texture 3
 	if (renderer->contrastOn) {
 		renderer->SetCurrentShader(contrastShader);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex[2], 0);
@@ -152,6 +186,7 @@ void Scene::DrawPostProcess(GLuint * texture) {
 		quad->Draw();
 	}
 
+	// If either of the two are on combine the post processing effects, else draw a normal quad
 	if (renderer->sobelOn || renderer->contrastOn) {
 		renderer->SetCurrentShader(combineProcessShader);
 

@@ -3,6 +3,10 @@
 
 RainyScene::RainyScene(Renderer * renderer) : Scene (renderer)
 {
+	// ------------------------------------------------------------------------------------------------------------------
+	// SCENE SET UP
+	// ------------------------------------------------------------------------------------------------------------------
+
 	heightMap = new HeightMap(TEXTUREDIR"flatterrain.data",257,257,1.25f);
 
 	origin = Vector3((257 * HEIGHTMAP_X) / 2.0f, 0.0f, (257 * HEIGHTMAP_X) / 2.0f);
@@ -27,6 +31,7 @@ RainyScene::RainyScene(Renderer * renderer) : Scene (renderer)
 	renderer->SetTextureRepeating(heightMap->GetTexture(), true);
 	renderer->SetTextureRepeating(heightMap->GetBumpMap(), true);
 
+	//TODO: Fix or remove this
 	wall = Mesh::GeneratePlane(1,4);
 	wall->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"brick.tga"
 		, SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
@@ -53,6 +58,10 @@ RainyScene::RainyScene(Renderer * renderer) : Scene (renderer)
 	root->AddChild(hellNode);
 	root->AddChild(wallNode);
 	
+	// ------------------------------------------------------------------------------------------------------------------
+	// SHADERS
+	// ------------------------------------------------------------------------------------------------------------------
+
 	particleShader = new Shader(SHADERDIR"particlevertex.glsl",
 		SHADERDIR"particlefragment.glsl",
 		SHADERDIR"particlegeometry.glsl");
@@ -69,9 +78,16 @@ RainyScene::RainyScene(Renderer * renderer) : Scene (renderer)
 	animShader = new Shader(SHADERDIR"skeletonVertex.glsl",
 		SHADERDIR"skeletonFragment.glsl");
 
-	if (!particleShader->LinkProgram() || !sceneShader->LinkProgram() || !shadowShader->LinkProgram() || !floorShader->LinkProgram()) {
+	if (!particleShader->LinkProgram() || 
+		!sceneShader->LinkProgram() || 
+		!shadowShader->LinkProgram() || 
+		!floorShader->LinkProgram()) {
 		return;
 	}
+
+	// ------------------------------------------------------------------------------------------------------------------
+	// FRAME BUFFERS AND TEXTURES
+	// ------------------------------------------------------------------------------------------------------------------
 
 	glGenTextures(1, &shadowTex);
 	glBindTexture(GL_TEXTURE_2D, shadowTex);
@@ -101,25 +117,28 @@ RainyScene::RainyScene(Renderer * renderer) : Scene (renderer)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
+	ResetScene();
 }
 
 RainyScene::~RainyScene(void)
 {
-	delete emitter;
+	delete sceneShader;
+	delete shadowShader;
+	delete animShader;
+	delete particleShader;
+	delete floorShader;
+
 	delete light;
-	delete hellData;
-	delete hellNode;
-	delete floor;
-	glDeleteTextures(2, bufferColourTex);
-	glDeleteTextures(1, &bufferDepthTex);
+	delete emitter;
+
 	glDeleteTextures(1, &shadowTex);
-	glDeleteFramebuffers(1, &bufferFBO);
-	glDeleteFramebuffers(1, &processFBO);
 	glDeleteFramebuffers(1, &shadowFBO);
 }
 
 void RainyScene::RenderScene()
 {
+	// Draw Shadow maps first
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
@@ -128,6 +147,7 @@ void RainyScene::RenderScene()
 
 	DrawShadowScene();
 
+	// Draw Scene with shadows
 	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
@@ -138,6 +158,7 @@ void RainyScene::RenderScene()
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+	// Draw Post processing effects
 	DrawPostProcess(&bufferColourTex[0]);
 
 	PresentScene();
@@ -153,23 +174,29 @@ void RainyScene::UpdateScene(float msec)
 	hellNode->Update(msec);
 	camera->UpdateCamera(msec);
 	
+	// Upadte Hellnode behaviour
+	// Spotlight increases
 	float fov = light->GetFov();
 	if (fov < 20.0f) {
-		fov += 1 / msec;
+		fov += msec * 0.1f;
 		light->SetFov(fov);
 	}
+	// Hellknight falls
 	else if (hellNodePos.y > 10.0f) {
-		hellNodePos.y -= 200 / msec;
+		hellNodePos.y -=  msec * 0.8f;
 	}
+	// Hellknight gets up
 	else if (hellNodeRot.z > 0.0f) {
-		hellNodeRot.z -= 10 / msec;
+		hellNodeRot.z -= msec * 0.05f;
 		if (hellNodePos.y > 0.0f) {
-			hellNodePos.y -= 10 / msec;
+			hellNodePos.y -= msec * 0.05f;
 		}
 	}
+	// Hellknight turns
 	else if (hellNodeRot.y < 90.0f) {
-		hellNodeRot.y += 10 / msec;
+		hellNodeRot.y += msec * 0.05f;
 	}
+	// Hellknight walks off
 	else if (!isWalking && hellNodePos.z < origin.z + 600.0f) {
 		hellNode->PlayAnim(MESHDIR"walk7.md5anim");
 		isWalking = true;
@@ -177,10 +204,12 @@ void RainyScene::UpdateScene(float msec)
 	else if (hellNode->IsLastFrame() && isWalking && hellNodePos.z < origin.z + 600.0f) {
 		hellNodePos.z += 60;
 	}
+	// hellknight stops
 	else if (isWalking && hellNodePos.z >= origin.z + 600.0f) {
 		hellNode->PlayAnim(MESHDIR"idle2.md5anim");
 		isWalking = false;
 	}
+	// Scene Resets to the beginning
 	else if (!isWalking && hellNodePos.z >= origin.z + 600.0f) {
 		ResetScene();
 	}
@@ -382,12 +411,6 @@ void RainyScene::DrawRain()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	glUseProgram(0);
-}
-
-void RainyScene::MoveLight(Vector3 by) {
-	Vector3 newpos = light->GetPosition();
-	newpos += by;
-	light->SetPosition(newpos);
 }
 
 void RainyScene::EnableScene() {

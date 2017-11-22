@@ -11,6 +11,7 @@
 #include "TextMesh.h"
 
 class Renderer : public OGLRenderer {
+	// Set up friends, this is so that the scenes can use the renderer
 	friend class Scene;
 	friend class MountainScene;
 	friend class VolcanoScene;
@@ -25,34 +26,45 @@ public:
 	virtual bool HasInitialised() { return init; }
 	virtual void UpdateShaderMatrices();
 
-	void BuildNodeLists(SceneNode * from);
-
-	void SortNodeLists();
-
-	void DrawNodes();
-
-	void DrawNode(SceneNode * n);
-
-	void ClearNodeLists();
-
-	void ResetScenes();
-
 	void	DrawText(const std::string &text, const Vector3 &position, const float size = 10.0f, const bool perspective = false);
 
-	virtual void ToggleSobel() { sobelOn = !sobelOn; }
-	virtual void Togglecontrast() { contrastOn = !contrastOn; }
-	virtual void ToggleSplitScreen() { isSplitScreen = !isSplitScreen;}
-	virtual void TogglePause() {
+	// ------------------------------------------------------------------------------------------------------------------
+	// TOGGLE COMMANDS
+	// ------------------------------------------------------------------------------------------------------------------
+	virtual void ToggleSobel() { sobelOn = !sobelOn; }						// Toggle Sobel Filters
+	virtual void Togglecontrast() { contrastOn = !contrastOn; }				// Toggle Contrast Post processing effect
+	virtual void ToggleSplitScreen() { isSplitScreen = !isSplitScreen;}		// Toggle Splitscreen
+	virtual void TogglePause() {											// Toggle Scene Rotation
 		paused = !paused;
 		if (!paused) { sceneTimer = 0.0f; }
 	}
+	virtual void ToggleControls() { showControls = !showControls; }			// Toggle Controls display
+	virtual void ToggleFeatures() { showFeatures = !showFeatures; }			// Toggle Feature display
 
-	bool IsSplitScreen() { return isSplitScreen; }
-	void SetControlledScene(int idx);
-	void NextScene();
-	void PreviousScene();
-
+	// ------------------------------------------------------------------------------------------------------------------
+	// GENERAL METHODS
+	// ------------------------------------------------------------------------------------------------------------------
+	bool IsSplitScreen() { return isSplitScreen; }			
+	void SetControlledScene(int idx);						// Sets the currently controlled Scene to idx (for splitscreen)
+	void SetActiveScene(int idx);							// Sets the currently active Scene to idx (for individual scenes)
+	void NextScene();										// Cycle to next Scene
+	void PreviousScene();									// Cycle to previous Scene
+	void ResetCurrent() { currentScene->ResetScene(); }		// Reset scene to initial state
+	void ResetScenes();										// Reset all scenes to start
 protected:
+	void BuildNodeLists(SceneNode * from);		// create node lists from a tree of nodes
+	void SortNodeLists();						// Sort this list
+	void DrawNodes();							// Draw the nodes from this list
+	void DrawNode(SceneNode * n);				// Draw a signle node
+	void ClearNodeLists();						// Clear the generated node lists
+
+
+
+	void switchActiveCamera(bool cama, bool camb, bool camc); // Set which cameras are currently active
+	
+	void PresentScene();						// Presents current Scene
+	void PresentSplitScreen();					// Presents all scenes in splitscreen
+
 	Scene * scenes[3];
 	Scene * currentScene;
 
@@ -67,18 +79,14 @@ protected:
 	SceneNode * root;
 
 	bool init = false;
+	bool showControls = false;
+	bool showFeatures = false;
 	float sceneTimer = 0.0f;
 	float sceneLength = 30.0f;  // in seconds
 	int currentSceneIdx = 0;
 	int controlledScene = 0;
 	float FPS;
 	float updateTime = 0.0f;
-
-
-	void switchActiveCamera(bool cama, bool camb, bool camc);
-	void PresentScene();
-
-	void PresentSplitScreen();
 
 	GLuint bufferFBO;
 	GLuint hudFBO;

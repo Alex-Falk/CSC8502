@@ -4,11 +4,14 @@ Renderer::Renderer(Window & parent) : OGLRenderer(parent)
 {
 	root = new SceneNode;
 
-	quad = Mesh::GenerateQuad();
-	textquad = Mesh::GenerateQuad();
+	quad = Mesh::GenerateQuad();					// Quad to draw scene to
+	textquad = Mesh::GenerateQuad();				// Quad to draw the text to
 
-	camera = new Camera(0.0f, 0.0f, 0.0f, 0.0f, Vector3(0, 0, 0));
+	camera = new Camera(0.0f, 0.0f, 0.0f, 0.0f, Vector3(0, 0, 0));	// Basic camera, this doesn't really get used
 
+	// ------------------------------------------------------------------------------------------------------------------
+	// SHADERS
+	// ------------------------------------------------------------------------------------------------------------------
 	quadShader = new Shader(SHADERDIR"TexturedVertex.glsl",
 		SHADERDIR"TexturedFragment.glsl");
 	textShader = new Shader(SHADERDIR"TexturedVertex.glsl",
@@ -18,6 +21,9 @@ Renderer::Renderer(Window & parent) : OGLRenderer(parent)
 		return;
 	}
 
+	// ------------------------------------------------------------------------------------------------------------------
+	// TEXTURES AND SCENES
+	// ------------------------------------------------------------------------------------------------------------------
 	basicFont = new Font(SOIL_load_OGL_texture(TEXTUREDIR"tahoma.tga", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_COMPRESS_TO_DXT), 16, 16);
 
 	scenes[0] = new RainyScene(this);
@@ -35,6 +41,10 @@ Renderer::Renderer(Window & parent) : OGLRenderer(parent)
 	root->AddChild(scene1);
 	root->AddChild(scene2);
 	root->AddChild(scene3);
+
+	// ------------------------------------------------------------------------------------------------------------------
+	// FRAME BUFFERS AND TEXTURES
+	// ------------------------------------------------------------------------------------------------------------------
 
 	glGenTextures(1, &bufferDepthTex);
 	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
@@ -72,13 +82,18 @@ Renderer::Renderer(Window & parent) : OGLRenderer(parent)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
+	ResetScenes();
 }
 
-Renderer::~Renderer(void) {
-	//delete scenes;
+Renderer::~Renderer(void) {	
 	delete currentScene;
 	delete camera;
-
+	delete quadShader;
+	delete textShader;
+	delete root;
+	
+	currentShader = 0;
 	glDeleteTextures(2, bufferColourTex);
 	glDeleteTextures(1, &bufferDepthTex);
 	glDeleteFramebuffers(1, &bufferFBO);
@@ -88,11 +103,18 @@ Renderer::~Renderer(void) {
 
 void Renderer::RenderScene() {
 	if (!isSplitScreen) {
+		// Render current scene if splitscreen is disabled
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDisable(GL_CULL_FACE);
+		glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 		currentScene->RenderScene();
 		PresentScene();
 		SwapBuffers();
 	}
 	else {
+		// RESET SETTINGS FOR EACH SCENE TO ENSURE THEY DON'T MESS WITH EACH OTHER AND RENDER EACH SCENE
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -121,12 +143,14 @@ void Renderer::RenderScene() {
 
 
 void Renderer::UpdateScene(float msec) {
+	// Update timer, calculate FPS every second			
 	updateTime += 1.0f / msec;
 	if (updateTime > 1.0f) {
-		FPS = (1000.0f / msec);
+		FPS = (1000.0f / msec);				 // msec / 1000 = Seconds per frame
 		updateTime = 0.0f;
 	}
 
+	// If splitscreen disabled count towards the scene timer to have automatic switching
 	if (!isSplitScreen) {
 		if (!paused) {
 			sceneTimer += msec * 0.001f;
@@ -137,6 +161,7 @@ void Renderer::UpdateScene(float msec) {
 
 		currentScene->UpdateScene(msec);
 	}
+	// Else update all 3 scenes
 	else {
 		root->Update(msec);
 		scenes[0]->UpdateScene(msec);
@@ -162,7 +187,7 @@ void Renderer::NextScene() {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	currentScene = scenes[currentSceneIdx];
-	//SetControlledScene(currentSceneIdx);
+	SetControlledScene(currentSceneIdx);
 	currentScene->ResetScene();
 }
 
@@ -183,7 +208,7 @@ void Renderer::PreviousScene() {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	currentScene = scenes[currentSceneIdx];
-	//SetControlledScene(currentSceneIdx);
+	SetControlledScene(currentSceneIdx);
 	currentScene->ResetScene();
 }
 
@@ -196,21 +221,88 @@ void Renderer::switchActiveCamera(bool cama,bool camb,bool camc) {
 
 
 void Renderer::PresentScene() {
+
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
+
+
 	SetCurrentShader(textShader);
-	DrawText("Framerate: " + to_string((int)FPS), Vector3(0, 0, 0), 16.0f);
+	// ------------------------------------------------------------------------------------------------------------------
+	// DRAW BASIC TEXT
+	// ------------------------------------------------------------------------------------------------------------------
+	float ts = 14.0f;
+	int i = 0;
+
+	DrawText("Framerate: " + to_string((int)FPS), Vector3(0, i*ts, 0), ts); ++i;
 	string sobel_on = "OFF";
 	if (sobelOn) { sobel_on = "ON"; }
-	DrawText("Sobel \t" + sobel_on, Vector3(0, 16.0f, 0), 16.0f);
+	DrawText("Sobel \t" + sobel_on, Vector3(0, i * ts, 0), ts); ++i;
 	string contrast_on = "OFF";
 	if (contrastOn) { contrast_on = "ON"; }
-	DrawText("contrast \t" + contrast_on, Vector3(0, 32.0f, 0), 16.0f);
+	DrawText("contrast \t" + contrast_on, Vector3(0, i * ts, 0), ts); ++i;
 
-	DrawText("Active Scene \t" + to_string(currentSceneIdx+1), Vector3(0, 48.0f, 0), 16.0f);
-	DrawText("Time left \t" + to_string((int)sceneLength-(int)sceneTimer) + "s", Vector3(0, 64.0f, 0), 16.0f);
+	DrawText("Active Scene \t" + to_string(currentSceneIdx + 1), Vector3(0, i * ts, 0), ts); ++i;
+	DrawText("Time left \t" + to_string((int)sceneLength - (int)sceneTimer) + "s", Vector3(0, i * ts, 0), ts); ++i;
 
+	// ------------------------------------------------------------------------------------------------------------------
+	// DRAW FEATURE TEXT
+	// ------------------------------------------------------------------------------------------------------------------
+	if (showFeatures) {
+		switch (currentSceneIdx) {
+		case 0:
+			DrawText("------------------", Vector3(0, i * ts, 0), ts); ++i;
+			DrawText("SCENE FEATURES", Vector3(0, i * ts, 0), ts); ++i;
+			DrawText("Rain Effect", Vector3(0, i * ts, 0), ts); ++i;
+			DrawText("Skeletal Animation", Vector3(0, i * ts, 0), ts); ++i;
+			DrawText("Spotlight", Vector3(0, i * ts, 0), ts); ++i;
+			DrawText("Spotlight cone", Vector3(0, i * ts, 0), ts); ++i;
+			DrawText("Realtime Shadows", Vector3(0, i * ts, 0), ts); ++i;
+			break;
+		case 1:
+			DrawText("------------------", Vector3(0, i * ts, 0), ts); ++i;
+			DrawText("SCENE FEATURES", Vector3(0, i * ts, 0), ts); ++i;
+			DrawText("Landscape", Vector3(0, i * ts, 0), ts); ++i;
+			DrawText("Basic Lighting", Vector3(0, i * ts, 0), ts); ++i;
+			DrawText("Environment mapping", Vector3(0, i * ts, 0), ts); ++i;
+			DrawText("Reflections", Vector3(0, i * ts, 0), ts); ++i;
+			DrawText("Texture Blending", Vector3(0, i * ts, 0), ts); ++i;
+			DrawText("Periodic Change textures", Vector3(0, i * ts, 0), ts); ++i;
+			break;
+		case 2:
+			DrawText("------------------", Vector3(0, i * ts, 0), ts); ++i;
+			DrawText("SCENE FEATURES", Vector3(0, i * ts, 0), ts); ++i;
+			DrawText("Tesselation on water", Vector3(0, i * ts, 0), ts); ++i;
+			DrawText("Water waves", Vector3(0, i * ts, 0), ts); ++i;
+			DrawText("Tesselation on Terrain", Vector3(0, i * ts, 0), ts); ++i;
+			DrawText("Changing terrain", Vector3(0, i * ts, 0), ts); ++i;
+			DrawText("Deffered Rendering", Vector3(0, i * ts, 0), ts); ++i;
+			DrawText("Particle Effects", Vector3(0, i * ts, 0), ts); ++i;
+			break;
+		}
+		if (sobelOn) { DrawText("Sobel Postprocessing", Vector3(0, i * ts, 0), ts); ++i; }
+		if (contrastOn) { DrawText("Constrast Postprocessing", Vector3(0, i * ts, 0), ts); ++i; }
+	}
+
+	// ------------------------------------------------------------------------------------------------------------------
+	// DRAW CONTROLS TEXT
+	// ------------------------------------------------------------------------------------------------------------------
+	if (showControls) {
+		DrawText("------------------", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("CONTROLS", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("WASD \tCamera control", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("Z/X  \tCamera speed", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("1-3  \tScene selection", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("7    \tSobel", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("8    \tContrast", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("TAB  \tToggle Splitscreen", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("C    \tShow/Hide Controls", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("F    \tShow/Hide Features", Vector3(0, i * ts, 0), ts); ++i;
+	}
+
+	// ------------------------------------------------------------------------------------------------------------------
+	// DRAW CHOSEN SCENE TO A QUAD - each scene is stored in a different bufferColourTex
+	// ------------------------------------------------------------------------------------------------------------------
 	SetCurrentShader(quadShader);
 	projMatrix = Matrix4::Orthographic(-1, 1, 1, -1, -1, 1);
 	viewMatrix.ToIdentity();
@@ -229,28 +321,60 @@ void Renderer::PresentSplitScreen() {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
+	// ------------------------------------------------------------------------------------------------------------------
+	// DRAW BASIC TEXT
+	// ------------------------------------------------------------------------------------------------------------------
+
+	float ts = 14.0f;
+	int i = 0;
+
+	int maxi = (int)(height / ts);
+	i = (maxi / 2) + 1;
+
 	SetCurrentShader(textShader);
-	DrawText("Framerate: " + to_string((int)FPS), Vector3(0, 0, 0), 16.0f);
+	DrawText("Framerate: " + to_string((int)FPS), Vector3(0, i * ts, 0), ts); ++i;
 	string sobel_on = "OFF";
 	if (sobelOn) { sobel_on = "ON"; }
-	DrawText("Sobel \t" + sobel_on, Vector3(0, 16.0f, 0), 16.0f);
+	DrawText("Sobel \t" + sobel_on, Vector3(0, i * ts, 0), ts); ++i;
 	string contrast_on = "OFF";
 	if (contrastOn) { contrast_on = "ON"; }
-	DrawText("contrast \t" + contrast_on, Vector3(0, 32.0f, 0), 16.0f);
+	DrawText("contrast \t" + contrast_on, Vector3(0, i * ts, 0), ts); ++i;
 
-	DrawText("Controlled Scene \t" + to_string(controlledScene+1), Vector3(0, 48.0f, 0), 16.0f);
+	DrawText("Controlled Scene \t" + to_string(controlledScene+1), Vector3(0, i * ts, 0), ts); ++i;
 
+	// ------------------------------------------------------------------------------------------------------------------
+	// DRAW CONTROLS TEXT
+	// ------------------------------------------------------------------------------------------------------------------
+	if (showControls) {
+		DrawText("------------------", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("CONTROLS", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("WASD \tCamera control", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("Z/X  \tCamera speed", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("1-3  \tScene selection", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("7    \tSobel", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("8    \tContrast", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("TAB  \tToggle Splitscreen", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("C    \tShow/Hide Controls", Vector3(0, i * ts, 0), ts); ++i;
+	}
+
+	// ------------------------------------------------------------------------------------------------------------------
+	// SET UP SPLITSCREEN
+	// ------------------------------------------------------------------------------------------------------------------
 	root->GetChild(0)->SetModelScale(Vector3(0.5, 0.5, 0.5));
 	root->GetChild(0)->SetTransform(Matrix4::Translation(Vector3(-.5f, -.5f, 0)));
 	root->GetChild(0)->SetTexture(bufferColourTex[0]);
 
 	root->GetChild(1)->SetModelScale(Vector3(0.5, 0.5, 0.5));
-	root->GetChild(1)->SetTransform(Matrix4::Translation(Vector3(.5f, .5f, 0)));
+	root->GetChild(1)->SetTransform(Matrix4::Translation(Vector3(.5f, -.5f, 0)));
 	root->GetChild(1)->SetTexture(bufferColourTex[1]);
 
 	root->GetChild(2)->SetModelScale(Vector3(0.5, 0.5, 0.5));
-	root->GetChild(2)->SetTransform(Matrix4::Translation(Vector3(.5f, -.5f, 0)));
+	root->GetChild(2)->SetTransform(Matrix4::Translation(Vector3(.5f, .5f, 0)));
 	root->GetChild(2)->SetTexture(bufferColourTex[2]);
+
+	// ------------------------------------------------------------------------------------------------------------------
+	// DRAW SCENES - each scene is stored in a different bufferColourTex
+	// ------------------------------------------------------------------------------------------------------------------
 
 	SetCurrentShader(quadShader);
 	projMatrix = Matrix4::Orthographic(-1, 1, 1, -1, -1, 1);
@@ -315,6 +439,13 @@ void Renderer::SetControlledScene(int idx)
 	
 }
 
+void Renderer::SetActiveScene(int idx)
+{
+	currentSceneIdx = idx;
+	currentScene = scenes[currentSceneIdx];
+	SetControlledScene(currentSceneIdx);
+}
+
 void Renderer::UpdateShaderMatrices() {
 	if (currentShader) {
 		glUniformMatrix4fv(glGetUniformLocation(currentShader->GetProgram(), "modelMatrix"), 1, false, (float*)&modelMatrix);
@@ -326,17 +457,12 @@ void Renderer::UpdateShaderMatrices() {
 }
 
 void Renderer::BuildNodeLists(SceneNode * from) {
-	/*if (frameFrustum.InsideFrustum(*from)) {
-	Vector3 dir = from->GetWorldTransform().GetPositionVector() - renderer->camera->GetPosition();
-	from->SetCameraDistance(Vector3::Dot(dir, dir));
-	*/
 	if (from->GetColour().w < 1.0f) {
 		transparentNodeList.push_back(from);
 	}
 	else {
 		nodeList.push_back(from);
 	}
-	//}
 
 	for (vector<SceneNode*>::const_iterator i = from->GetChildIteratorStart(); i != from->GetChildIteratorEnd(); ++i) {
 		BuildNodeLists((*i));

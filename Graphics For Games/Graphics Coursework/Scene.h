@@ -12,31 +12,29 @@ class Scene
 {
 public:
 	Scene(Renderer * renderer);
-	~Scene() {
-		delete root;
-		delete quad;
-	}
+	~Scene();
 
 	virtual Mesh * getQuad() { return quad; }
 
-	virtual void UpdateScene(float msec) = 0;
-	virtual void RenderScene() = 0;
+	// This class is abstract and is only used to set up general things for the scenes
+	virtual void UpdateScene(float msec) = 0;	// Update scene
+	virtual void RenderScene() = 0;				// Render Scene to a quad
 
-	virtual void EnableScene() = 0;
-	virtual void ResetScene() = 0;
+	virtual void EnableScene() = 0;			
+	virtual void ResetScene() = 0;				// Reset Scene to starting values
 
-	void BuildNodeLists(SceneNode * from);
-	void SortNodeLists();
-	void DrawNodes();
-	void DrawNode(SceneNode * n);
-	void ClearNodeLists();
+	void BuildNodeLists(SceneNode * from);		// create node lists from a tree of nodes
+	void SortNodeLists();						// Sort this list
+	void DrawNodes();							// Draw the nodes from this list
+	void DrawNode(SceneNode * n);				// Draw a signle node
+	void ClearNodeLists();						// Clear the generated node lists
 
-	void DrawPostProcess(GLuint * texture);
+	void DrawPostProcess(GLuint * texture);		// Draw Post processing effects given a processed texture
 
-	void setCameraControl(bool b) { camera->setControls(b); }
+	void setCameraControl(bool b) { camera->setControls(b); }	// Locks/Unlocks camera controls
 
 protected:
-	void SetShaderParticleSize(float f);	//And a new setter
+	void SetShaderParticleSize(float f);		// Set the size of a particle (used in scenes with particle effects)
 
 	virtual void GenerateScreenTexture(GLuint & into, bool depth = false);
 

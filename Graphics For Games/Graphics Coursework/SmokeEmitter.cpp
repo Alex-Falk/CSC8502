@@ -99,6 +99,7 @@ Particle* SmokeEmitter::GetFreeParticle() {
 	p->direction.Normalise();	//Keep its direction normalised!
 	p->position = emitterPosition + Vector3((2 * RAND() - 1)*(emitterRadius), 0, (2 * RAND() - 1)*(emitterRadius));
 	p->lifetime = particleLifetime;
+	p->colour = Vector4(1, 0.000, 0.000, 1);
 	p->velocity = Vector3((2 * (RAND() - 0.5))*particleSpeed.x,2 *RAND()* particleSpeed.y, (2 * (RAND() - 0.5))*particleSpeed.x);
 
 	return p;	//return the new particle :-)

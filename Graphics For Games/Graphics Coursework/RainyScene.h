@@ -6,7 +6,7 @@
 #include "../../nclgl/MD5Mesh.h"
 #include "../../nclgl/MD5Node.h"
 
-#define SHADOWSIZE 2048
+#define SHADOWSIZE 2048		// Size of Texture used to create shadowmap
 
 class Scene;
 class HeightMap;
@@ -19,24 +19,23 @@ public:
 	RainyScene(Renderer * renderer);
 	virtual				~RainyScene(void);
 
-	virtual void		RenderScene();
-	virtual void		UpdateScene(float msec);
+	virtual void		UpdateScene(float msec);	// Update scene
+	virtual void		RenderScene();				// Render Scene to a quad
 
 	virtual void		EnableScene();
-	virtual void		ResetScene();
+	virtual void		ResetScene();				// Reset Scene to starting values
 protected:
-	void				PresentScene();
-	void				DrawShadowScene();
-	void				DrawCombinedScene();
+	void				PresentScene();				// Presents this scene to the renderers buffercolourtex[0]
+	
+	void				DrawShadowScene();			// Draw the shadowmap of the scene
+	void				DrawCombinedScene();		// Draw the Scene with shadows
 
-	void				DrawMesh();
-	void				DrawFloor();
-	void				DrawWall();
-	void				DrawRain();
+	void				DrawMesh();					// Draw hellknight
+	void				DrawFloor();				// Draw ground
+	void				DrawWall();					// draw wall - TODO: make it work
+	void				DrawRain();					// Draw rain particle effect
 
-	void				MoveLight(Vector3 by);
-
-	ParticleEmitter*	emitter;	//A single particle emitter
+	ParticleEmitter*	emitter;					// Rain particle emitter
 
 	Shader *			sceneShader;
 	Shader *			shadowShader;

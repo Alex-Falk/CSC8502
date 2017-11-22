@@ -15,4 +15,5 @@ void main(void)	{
 	vec4 diffuse 		= texture2D(diffuseTex, IN.texCoord);
 
 	fragColor 		= diffuse;
+	fragColor.a 	= 0.9;
 }	

@@ -4,8 +4,8 @@
 #include "ParticleEmitter.h"
 #include "SmokeEmitter.h"
 
-#define NPATCHES 16.0f
-#define YSCALE 350.0f
+#define NPATCHES 16.0f		// How many patches to use to create the Terrain & Water planes
+#define YSCALE 350.0f		// By how much to scale the height by in the tesselation shader that takes in a heightmap
 
 class Scene;
 class HeightMap;
@@ -17,34 +17,33 @@ public:
 	VolcanoScene(Renderer * renderer);
 	virtual ~VolcanoScene(void);
 
-	virtual void		RenderScene();
-	virtual void		UpdateScene(float msec);
-
-	virtual void		FillBuffers();
+	virtual void		UpdateScene(float msec);	// Update scene
+	virtual void		RenderScene();				// Render Scene to a quad
 
 	virtual void		EnableScene();
-	virtual void		ResetScene();
+	virtual void		ResetScene();				// Reset Scene to starting values
 
 protected:
+	void				PresentScene();				// Presents this scene to the renderers buffercolourtex[2]
+	void				FillBuffers();				// Deffered rendering - draw only the scene
 	void				DrawHeightmap();
 	void				DrawWater();
 	void				DrawSkybox();
-	void				PresentScene();
-	void				DrawSmoke();
-	void				DrawPointLights();
-	void				CombineBuffers();
+	void				DrawLava();
+	void				DrawPointLights();			// Deffered rendering - draw lights
+	void				CombineBuffers();			// Deffered rendering - draw combined scenes with lights
 
 	Shader *			tessShader;
 	Shader *			skyboxShader;
 	Shader *			testShader;
-	Shader *			reflectShader;
+	Shader *			waterTessShader;
 	Shader *			particleShader;
 	Shader *			combineShader;
 	Shader *			pointLightShader;
 
 	SmokeEmitter *		emitter;
 
-	vector<Light *>		pointLights;
+	vector<Light>		pointLights;
 
 	Mesh *				heightMap;
 	Mesh *				combineQuad;

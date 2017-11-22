@@ -7,34 +7,30 @@ class Scene;
 class HeightMap;
 class Camera;
 
-//#define SHADOWSIZE 2048
 class MountainScene : public Scene {
 public:
 	MountainScene(Renderer * renderer);
 	virtual ~MountainScene(void);
 
-	virtual void		RenderScene();
-	virtual void		UpdateScene(float msec);
+	virtual void		UpdateScene(float msec);	// Update scene
+	virtual void		RenderScene();				// Render Scene to a quad
 
 	virtual void		EnableScene();
-	virtual void		ResetScene();
+	virtual void		ResetScene();				// Reset Scene to starting values
 
 protected:
-	void				DrawHeightmap();
+	void				DrawHeightmap();			
 	void				DrawWater();
 	void				DrawSkybox();
-	void				PresentScene();
+	void				PresentScene();				// Presents this scene to the renderers buffercolourtex[1]
 
 	Shader *			lightShader;
 	Shader *			reflectShader;
 	Shader *			skyboxShader;
-	Shader *			particleShader;
 	GLuint				waterTex;
 
-	ParticleEmitter *	emitter;
-
 	HeightMap *			heightMap;
-	Mesh *				quad2;
+	Mesh *				EnvironmentQuad;
 
 	Light *				lights[5];
 
