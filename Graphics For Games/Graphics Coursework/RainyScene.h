@@ -31,6 +31,7 @@ protected:
 
 	void				DrawMesh();
 	void				DrawFloor();
+	void				DrawWall();
 	void				DrawRain();
 
 	void				MoveLight(Vector3 by);
@@ -48,7 +49,7 @@ protected:
 
 	MD5FileData *		hellData;
 	MD5Node *			hellNode;
-	Floor *				floor;
+	Mesh *				floor;
 	Mesh *				wall;
 	Spotlight *			light;
 	HeightMap *			heightMap;

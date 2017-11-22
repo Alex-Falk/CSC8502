@@ -99,9 +99,10 @@ Mesh * Mesh::GenerateQuad()
 	return m;
 }
 
-Mesh * Mesh::GeneratePlane(int size) {
+Mesh * Mesh::GeneratePlane(int x, int y) {
 	Mesh* m = new Mesh();
-	m->numVertices = 4 * size * size;
+	if (y == 0) { y = x; }
+	m->numVertices = 4 * y * x;
 	m->type = GL_TRIANGLE_STRIP;
 
 	m->vertices = new Vector3[m->numVertices];
@@ -112,8 +113,8 @@ Mesh * Mesh::GeneratePlane(int size) {
 
 	int c = 0;
 
-	for (int i = 0; i < size; ++i) {
-		for (int j = 0; j < size; ++j) {
+	for (int i = 0; i < x; ++i) {
+		for (int j = 0; j < y; ++j) {
 			m->vertices[c] = Vector3(-1.0f + (2 * i), -1.0f + (2 * j), 0.0f);
 			m->vertices[c + 1] = Vector3(-1.0f + (2 * i), 1.0f + (2 * j), 0.0f);
 			m->vertices[c + 2] = Vector3(1.0f + (2 * i), -1.0f + (2 * j), 0.0f);

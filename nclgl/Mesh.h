@@ -15,7 +15,7 @@ public:
 	static Mesh* GenerateTriangle();
 	static Mesh* GenerateQuad();
 
-	static Mesh * GeneratePlane(int size);
+	static Mesh * GeneratePlane(int x, int y = 0);
 
 	void SetTexture(GLuint tex) { texture = tex; }
 	GLuint GetTexture() { return texture; }

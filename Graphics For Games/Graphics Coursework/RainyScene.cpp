@@ -27,7 +27,7 @@ RainyScene::RainyScene(Renderer * renderer) : Scene (renderer)
 	renderer->SetTextureRepeating(heightMap->GetTexture(), true);
 	renderer->SetTextureRepeating(heightMap->GetBumpMap(), true);
 
-	wall = Mesh::GenerateQuad();
+	wall = Mesh::GeneratePlane(1,4);
 	wall->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"brick.tga"
 		, SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 	wall->SetBumpMap(SOIL_load_OGL_texture(TEXTUREDIR"brickDOT3.tga"
@@ -42,12 +42,17 @@ RainyScene::RainyScene(Renderer * renderer) : Scene (renderer)
 
 
 	SceneNode * heightNode = new SceneNode(heightMap);
+	SceneNode * wallNode = new SceneNode(wall);
+
+	wallNode->SetTransform(Matrix4::Translation(Vector3((257 * HEIGHTMAP_X) / 2.0f, 800.0f, (257 * HEIGHTMAP_X) / 2.0f)));
+	wallNode->SetModelScale(Vector3(100, 1, 100));
+		
 	root->AddChild(heightNode);
 	hellNodePos = Vector3((257 * HEIGHTMAP_X) / 2.0f, 800.0f, (257 * HEIGHTMAP_X) / 2.0f);
 	hellNode->SetTransform(Matrix4::Translation(hellNodePos));
 	root->AddChild(hellNode);
+	root->AddChild(wallNode);
 	
-
 	particleShader = new Shader(SHADERDIR"particlevertex.glsl",
 		SHADERDIR"particlefragment.glsl",
 		SHADERDIR"particlegeometry.glsl");
@@ -219,6 +224,7 @@ void RainyScene::DrawShadowScene()
 
 	DrawMesh();
 	DrawFloor();
+	DrawWall();
 
 	glUseProgram(0);
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -258,6 +264,7 @@ void RainyScene::DrawCombinedScene()
 	renderer->UpdateShaderMatrices();
 
 	DrawFloor();
+	DrawWall();
 
 	renderer->SetCurrentShader(floorShader);
 	glUniform1i(glGetUniformLocation(renderer->currentShader->GetProgram(),
@@ -312,6 +319,22 @@ void RainyScene::DrawMesh()
 void RainyScene::DrawFloor()
 {
 	BuildNodeLists(root->GetChild(1));
+	SortNodeLists();
+	renderer->modelMatrix.ToIdentity();
+	renderer->tempMatrix = renderer->shadowMatrix * renderer->modelMatrix;
+
+	glUniformMatrix4fv(glGetUniformLocation(renderer->currentShader->GetProgram()
+		, "shadowMatrix"), 1, false, *& renderer->tempMatrix.values);
+	glUniformMatrix4fv(glGetUniformLocation(renderer->currentShader->GetProgram()
+		, "modelMatrix"), 1, false, *&	renderer->modelMatrix.values);
+
+	DrawNodes();
+	ClearNodeLists();
+}
+
+void RainyScene::DrawWall()
+{
+	BuildNodeLists(root->GetChild(2));
 	SortNodeLists();
 	renderer->modelMatrix.ToIdentity();
 	renderer->tempMatrix = renderer->shadowMatrix * renderer->modelMatrix;
