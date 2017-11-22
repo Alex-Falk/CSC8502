@@ -123,6 +123,8 @@ void ParticleEmitter::SetPosition(const Vector3 pos)
 This function gets a pointer to an unused particle - either from the freelist,
 or from a newly created particle on the heap.
 */
+
+
 Particle* ParticleEmitter::GetFreeParticle()	{
 	Particle * p = NULL;
 

@@ -125,6 +125,8 @@ public:
 	void	SetDestructionHeight(const float h) { destructionHeight = h; }
 	float	GetDestructionHeight() { return destructionHeight; }
 
+	void	ClearParticles() { particles.clear(); }
+
 protected:
 	/*
 	This is the magic of our free list. If there's a particle 'spare',

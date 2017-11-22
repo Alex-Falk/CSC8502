@@ -5,11 +5,6 @@ uniform sampler2D waterBumpTex;
 uniform samplerCube cubeTex;
 uniform vec3 cameraPos;
 
-uniform vec4 lightColour;
-uniform vec4 specColour;
-uniform vec3 lightPos;
-uniform float lightRadius;
-
 in Vertex {
 	vec2 texCoord;
 	vec3 normal;
@@ -19,7 +14,7 @@ in Vertex {
 	vec3 position;
 } IN;
 
-out vec4 fragColor;
+out vec4 fragColor[2];
 
 void main(void) {
 
@@ -35,29 +30,7 @@ void main(void) {
 
 	vec3 normal 			= normalize(TBN * bump.rgb * 2.0 - 1.0);
 
-	vec3 incident 		= normalize(lightPos - IN.worldPos);
-
-	vec4 reflection 	= texture (cubeTex ,
-							reflect(incident ,normalize(normal)));
-
-	float lambert 		= max (0.0 , dot(incident,normal));
-
-	float dist 			= length(lightPos - IN.worldPos);
-	float atten 		= 1.0 - clamp (dist / lightRadius, 0.0, 1.0);
-
-	vec3 viewDir 		= normalize (cameraPos - IN.worldPos);
-	vec3 halfDir 		= normalize (incident + viewDir);
-
-	float rFactor 		= max (0.0, dot (halfDir, normal));
-	float sFactor 		= pow (rFactor, sFac);
-
-	vec3 colour 	= (diffuse.rgb * lightColour.rgb);
-	colour 			+= (specColour.rgb * sFactor) * 0.1;
-	
-	vec4 newColour 	= vec4 (colour * atten * lambert , diffuse.a)*(diffuse+reflection);
-	newColour.rgb	+= (diffuse.rgb * lightColour.rgb);
-
-
-	fragColor = newColour*0.5;//texture(terrainTex, IN.texCoord);
-	fragColor.a = 0.98*fragColor.a;
+	fragColor[0] = diffuse;//texture(terrainTex, IN.texCoord);
+	fragColor[1] = vec4(normal.xyz*0.5 + 0.5, 1.0);
+	//fragColor.a = 0.98*fragColor.a;
 }

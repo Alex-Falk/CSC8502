@@ -68,7 +68,7 @@ protected:
 
 	bool init = false;
 	float sceneTimer = 0.0f;
-	float sceneLength = 40.0f;  // in seconds
+	float sceneLength = 30.0f;  // in seconds
 	int currentSceneIdx = 0;
 	int controlledScene = 0;
 	float FPS;

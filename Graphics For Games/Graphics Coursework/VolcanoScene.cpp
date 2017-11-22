@@ -2,14 +2,17 @@
 
 VolcanoScene::VolcanoScene(Renderer * renderer) : Scene(renderer) {
 		
-	light = new Light(Vector3(0, 600, 0), Vector4(1, 1, 1, 1), Vector4(1, 1, 1, 1), 3000);
+	//light = new Light(Vector3(0, 600, 0), Vector4(1, 1, 1, 1), Vector4(1, 1, 1, 1), 3000);
 
-	camera->SetPosition(Vector3(0, 50, 0));
-	emitter = new SmokeEmitter(SOIL_load_OGL_texture(TEXTUREDIR"lava.png",
+
+	camera->SetPosition(Vector3(144, 63, 1540));
+	camera->SetPitch(11);
+	camera->SetYaw(318);
+	emitter = new SmokeEmitter(SOIL_load_OGL_texture(TEXTUREDIR"lava.jpg",
 		SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_COMPRESS_TO_DXT), 5);
 	emitter->SetPosition(Vector3(793, YSCALE-50, 780));
 	emitter->SetParticleRate(5.0f);
-	emitter->SetParticleSize(4.0f);
+	emitter->SetParticleSize(2.0f);
 	emitter->SetParticleVariance(1.0f);
 	emitter->SetLaunchParticles(2.0f);
 	emitter->SetParticleLifetime(5.0f);
@@ -57,12 +60,32 @@ VolcanoScene::VolcanoScene(Renderer * renderer) : Scene(renderer) {
 	if (!reflectShader->LinkProgram()) {
 		return;
 	}
+
+	combineShader = new Shader(SHADERDIR"combinevert.glsl",
+		SHADERDIR"combinefrag.glsl");
+
+	if (!combineShader->LinkProgram()) {
+		return;
+	}
+
+	pointLightShader = new Shader(SHADERDIR"pointlightvertex.glsl",
+		SHADERDIR"pointlightfragment.glsl");
+
+	if (!pointLightShader->LinkProgram()) {
+		return;
+	}
+
 	float patches = NPATCHES;
 	heightMap	= Mesh::GeneratePlane(patches);
 	heightMap->SetType(GL_PATCHES);
 	quad2		= Mesh::GeneratePlane(patches*2);
 	quad2->SetType(GL_PATCHES);
+	combineQuad = Mesh::GenerateQuad();
 	skybox		= Mesh::GenerateQuad();
+	sphere		= new OBJMesh();
+	if (!sphere->LoadOBJMesh(MESHDIR"ico.obj")) {
+		return;
+	}
 
 	heightMap->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"lava.jpg"
 		, SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
@@ -106,6 +129,42 @@ VolcanoScene::VolcanoScene(Renderer * renderer) : Scene(renderer) {
 	renderer->SetTextureRepeating(quad2->GetBumpMap(), true);
 	renderer->init = true;
 
+	glGenFramebuffers(1, &buffer2FBO);
+	glGenFramebuffers(1, &pointLightFBO);
+	glGenFramebuffers(1, &combinedFBO);
+
+	GLenum buffers[2];
+	buffers[0] = GL_COLOR_ATTACHMENT0;
+	buffers[1] = GL_COLOR_ATTACHMENT1;
+
+	GenerateScreenTexture(buffer2DepthTex,true);
+	GenerateScreenTexture(buffer2NormalTex);
+	GenerateScreenTexture(buffer2ColourTex);
+	GenerateScreenTexture(lightEmissiveTex);
+	GenerateScreenTexture(lightSpecularTex);
+	GenerateScreenTexture(combinedColorTex);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, buffer2FBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, buffer2ColourTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, buffer2NormalTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, buffer2DepthTex, 0);
+	glDrawBuffers(2, buffers);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) !=
+		GL_FRAMEBUFFER_COMPLETE) {
+		return;
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, pointLightFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, lightEmissiveTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, lightSpecularTex, 0);
+	glDrawBuffers(2, buffers);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) !=
+		GL_FRAMEBUFFER_COMPLETE) {
+		return;
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -137,17 +196,32 @@ void VolcanoScene::UpdateScene(float msec) {
 	else {
 		coolingRatio += msec * 0.0001f;
 	}
-	
-	
-
-
-	
-
 }
 
 void VolcanoScene::RenderScene() {
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+	FillBuffers();
+	DrawPointLights();
+	CombineBuffers();
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	DrawPostProcess(&combinedColorTex);
+
+	PresentScene();
+}
+
+void VolcanoScene::FillBuffers() {
+
+	glBindFramebuffer(GL_FRAMEBUFFER, buffer2FBO);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	renderer->projMatrix = Matrix4::Perspective(1.0f, 22999.0f, (float)renderer->width / (float)renderer->height, 45.0f);
@@ -158,24 +232,31 @@ void VolcanoScene::RenderScene() {
 	DrawWater();
 	DrawSmoke();
 
+
+	glUseProgram(0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	DrawPostProcess();
-
-	PresentScene();
 }
 
 void VolcanoScene::DrawSkybox() {
 	renderer->viewMatrix = camera->BuildViewMatrix();
-
+	glDisable(GL_CULL_FACE);
 	glDepthMask(GL_FALSE);
+	glDisable(GL_DEPTH_TEST);
 	renderer->SetCurrentShader(skyboxShader);
+
+	glUniform1i(glGetUniformLocation(renderer->currentShader->GetProgram(),
+		"cubeTex"), 2);
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
 
 	renderer->UpdateShaderMatrices();
 	skybox->Draw();
 	quad2->Draw();
 
 	glUseProgram(0);
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
 	glDepthMask(GL_TRUE);
 }
 
@@ -213,7 +294,7 @@ void VolcanoScene::DrawHeightmap() {
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, terrainTex);
 
-	renderer->SetSingleShaderLight(*light);
+	//renderer->SetSingleShaderLight(*light);
 
 	renderer->viewMatrix = camera->BuildViewMatrix();
 	renderer->modelMatrix = Matrix4::Rotation(90, Vector3(1, 0, 0)) *
@@ -225,7 +306,6 @@ void VolcanoScene::DrawHeightmap() {
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glUseProgram(0);
 }
-
 
 void VolcanoScene::DrawWater() {
 	renderer->SetCurrentShader(reflectShader);
@@ -240,14 +320,9 @@ void VolcanoScene::DrawWater() {
 	glUniform1i(glGetUniformLocation(renderer->currentShader->GetProgram(),
 		"waterBumpTex"), 2);
 
-	glUniform1i(glGetUniformLocation(renderer->currentShader->GetProgram(),
-		"cubeTex"), 4);
-
 	glUniform1f(glGetUniformLocation(renderer->currentShader->GetProgram(),
 		"time"), time);
 
-	glActiveTexture(GL_TEXTURE4);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
 
 	renderer->modelMatrix =
 		Matrix4::Translation(Vector3(-50*16, 40, -50*16)) *
@@ -256,12 +331,128 @@ void VolcanoScene::DrawWater() {
 
 	renderer->textureMatrix = Matrix4::Scale(Vector3(10.0f, 10.0f, 10.0f));
 
-	renderer->SetSingleShaderLight(*light);
+	//renderer->SetSingleShaderLight(*light);
 
 	renderer->UpdateShaderMatrices();
 
 	quad2->Draw();
 
+	glUseProgram(0);
+}
+
+void VolcanoScene::DrawSmoke()
+{
+	glClearColor(0, 0, 0, 1);
+	renderer->SetCurrentShader(particleShader);
+
+	renderer->viewMatrix = camera->BuildViewMatrix();
+	renderer->modelMatrix.ToIdentity();
+	renderer->textureMatrix.ToIdentity();
+	renderer->projMatrix = Matrix4::Perspective(1.0f, 22999.0f, (float)renderer->width / (float)renderer->height, 45.0f);
+
+	glUniform1i(glGetUniformLocation(renderer->currentShader->GetProgram(), "diffuseTex"), 0);
+
+	SetShaderParticleSize(emitter->GetParticleSize());
+	renderer->UpdateShaderMatrices();
+
+	emitter->Draw();
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glUseProgram(0);
+}
+
+void VolcanoScene::DrawPointLights() {
+	glBindFramebuffer(GL_FRAMEBUFFER, pointLightFBO);
+	renderer->SetCurrentShader(pointLightShader);
+
+	glClearColor(0, 0, 0, 1);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	glBlendFunc(GL_ONE, GL_ONE);
+
+	glUniform1i(glGetUniformLocation(renderer->currentShader->GetProgram(), "depthTex"), 3);
+	glUniform1i(glGetUniformLocation(renderer->currentShader->GetProgram(), "normTex"), 4);
+
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, buffer2DepthTex);
+
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, buffer2NormalTex);
+
+	glUniform3fv(glGetUniformLocation(renderer->currentShader->GetProgram(), "cameraPos"),
+		1, (float *)& camera->GetPosition());
+
+	glUniform2f(glGetUniformLocation(renderer->currentShader->GetProgram(), "pixelSize"),
+		1.0f / renderer->width, 1.0f / renderer->height);
+
+	vector<Particle *> particles = emitter->GetParticles();
+	for (int i = 0; i < particles.size(); ++i) {
+		Particle *p = particles[i];
+		pointLights.push_back(new Light(p->position, Vector4(0.698, 0.133, 0.133, 1), Vector4(0.698, 0.133, 0.133, 1), 50));
+	}
+
+	pointLights.push_back(new Light(emitter->GetPosition()+Vector3(0,40,0), Vector4(0.698, 0.133, 0.133, 1), Vector4(0.698, 0.133, 0.133, 1), 400));
+	pointLights.push_back(new Light(Vector3(0, 3000, 0), Vector4(0.7, 0.7, 0.7, 1), Vector4(1, 1, 1, 1), 8000));
+
+	for (int i = 0; i < pointLights.size(); ++i) {
+		Light *l = pointLights[i];
+		float r = l->GetRadius();
+
+		renderer->projMatrix = Matrix4::Perspective(1.0f, 22999.0f, (float)renderer->width / (float)renderer->height, 45.0f);
+		renderer->modelMatrix = Matrix4::Translation(l->GetPosition()) *
+			Matrix4::Scale(Vector3(r, r, r));
+		 
+		l->SetPosition(renderer->modelMatrix.GetPositionVector());
+
+		renderer->SetSingleShaderLight(*l);
+
+		renderer->UpdateShaderMatrices();
+
+		float dist = (l->GetPosition() - camera->GetPosition()).Length();
+		if (dist < r) {
+			glCullFace(GL_FRONT);
+		}
+		else {
+			glCullFace(GL_BACK);
+		}
+		sphere->Draw();
+	}
+
+	glCullFace(GL_BACK);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glClearColor(0.2f, 0.2f, 0.2f, 1);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glUseProgram(0);
+
+	pointLights.clear();
+}
+
+void VolcanoScene::CombineBuffers() {
+	glBindFramebuffer(GL_FRAMEBUFFER, combinedFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, combinedColorTex, 0);
+	renderer->SetCurrentShader(combineShader);
+
+	renderer->projMatrix = Matrix4::Orthographic(-1, 1, 1, -1, -1, 1);
+	renderer->UpdateShaderMatrices();
+
+	glUniform1i(glGetUniformLocation(renderer->currentShader->GetProgram(), "diffuseTex"), 4);
+	glUniform1i(glGetUniformLocation(renderer->currentShader->GetProgram(), "emissiveTex"), 5);
+	glUniform1i(glGetUniformLocation(renderer->currentShader->GetProgram(), "specularTex"), 6);
+
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, buffer2ColourTex);
+
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, lightEmissiveTex);
+
+	glActiveTexture(GL_TEXTURE6);
+	glBindTexture(GL_TEXTURE_2D, lightSpecularTex);
+
+	combineQuad->Draw();
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glUseProgram(0);
 }
 
@@ -287,31 +478,37 @@ void VolcanoScene::PresentScene() {
 	ClearNodeLists();
 }
 
-void VolcanoScene::DrawSmoke()
-{
-	glClearColor(0, 0, 0, 1);
-	renderer->SetCurrentShader(particleShader);
-
-	renderer->viewMatrix = camera->BuildViewMatrix();
-	renderer->modelMatrix.ToIdentity();
-	renderer->textureMatrix.ToIdentity();
-	renderer->projMatrix = Matrix4::Perspective(1.0f, 22999.0f, (float)renderer->width / (float)renderer->height, 45.0f);
-
-	glUniform1i(glGetUniformLocation(renderer->currentShader->GetProgram(), "diffuseTex"), 0);
-
-	SetShaderParticleSize(emitter->GetParticleSize());
-	renderer->UpdateShaderMatrices();
-
-	emitter->Draw();
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	glUseProgram(0);
-}
-
 void VolcanoScene::EnableScene() {
 
 }
 
 void VolcanoScene::ResetScene() {
+	time = 0.0f;
+	scalefactor = 0.0f;
+	coolingRatio = 0.0f;
+	waterRotate = 0.0f;
+	camera->SetPosition(Vector3(144, 63, 1540));
+	camera->SetPitch(11);
+	camera->SetYaw(318);
+	emitter->ClearParticles();
+	emitter->SetPosition(Vector3(793, (scalefactor)* YSCALE - 20, 780));
 
+	if (!emitter->GetEnabled()) {
+		emitter->Toggle();
+	}
+}
+
+void VolcanoScene::GenerateScreenTexture(GLuint & into, bool depth) {
+	glGenTextures(1, &into);
+	glBindTexture(GL_TEXTURE_2D, into);
+
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, depth ? GL_DEPTH_COMPONENT24 : GL_RGBA8, renderer->width, renderer->height, 0, depth
+		? GL_DEPTH_COMPONENT : GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
 }

@@ -7,35 +7,36 @@ MountainScene::MountainScene(Renderer * renderer) : Scene(renderer) {
 	heightMap = new HeightMap(TEXTUREDIR"testTerrain3.data");
 	quad2 = Mesh::GenerateQuad();
 
-	emitter = new ParticleEmitter(SOIL_load_OGL_texture(TEXTUREDIR"snow.png",
-		SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_COMPRESS_TO_DXT),2000);
-	emitter->Toggle();
-
 	camera->SetPosition(Vector3(heightMap->RAW_WIDTH * HEIGHTMAP_X / 2.0f,
 		heightMap->RAW_HEIGHT*heightMap->HEIGHTMAP_Y, heightMap->RAW_WIDTH * HEIGHTMAP_X / 2.0f));
-
-	emitter->SetPosition(camera->GetPosition());
-
+	
 	particleShader = new Shader(SHADERDIR"particlevertex.glsl",
 		SHADERDIR"snowfrag.glsl",
 		SHADERDIR"particlegeometry.glsl");
-
-	reflectShader = new Shader(SHADERDIR"PerPixelVertex.glsl",
-		SHADERDIR"reflectFragment.glsl");
-	skyboxShader = new Shader(SHADERDIR"skyboxVertex.glsl",
-		SHADERDIR"skyboxFragment.glsl");
-	quadShader = new Shader(SHADERDIR"TexturedVertex.glsl",
-		SHADERDIR"TexturedFragment.glsl");
-	//shadowShader = new Shader(SHADERDIR"shadowVert.glsl",
-	//	SHADERDIR"shadowFrag.glsl");
 
 	if (!particleShader->LinkProgram()) {
 		return;
 	}
 
+	reflectShader = new Shader(SHADERDIR"PerPixelVertex.glsl",
+		SHADERDIR"reflectFragment.glsl");
 
-	if (!reflectShader->LinkProgram()) { 
-		return; 
+	if (!reflectShader->LinkProgram()) {
+		return;
+	}
+
+	skyboxShader = new Shader(SHADERDIR"skyboxVertex.glsl",
+		SHADERDIR"skyboxFragment.glsl");
+
+	if (!skyboxShader->LinkProgram()) {
+		return;
+	}
+
+	quadShader = new Shader(SHADERDIR"TexturedVertex.glsl",
+		SHADERDIR"TexturedFragment.glsl");
+
+	if (!quadShader->LinkProgram()) {
+		return;
 	}
 
 	lightShader = new Shader(SHADERDIR"BumpVertex.glsl",
@@ -44,18 +45,6 @@ MountainScene::MountainScene(Renderer * renderer) : Scene(renderer) {
 	if (!lightShader->LinkProgram()) { 
 		return; 
 	}
-	if (!skyboxShader->LinkProgram()) { 
-		return; 
-	}
-	if (!quadShader->LinkProgram()) { 
-		return; 
-	}
-	if (!sobelShader->LinkProgram()) {
-		return; 
-	}
-	//if (!shadowShader->LinkProgram()) {
-	//	return;
-	//}
 
 	quad2->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"water2.JPG",
 		SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
@@ -75,9 +64,9 @@ MountainScene::MountainScene(Renderer * renderer) : Scene(renderer) {
 		SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
 
 	cubeMap = SOIL_load_OGL_cubemap(
-		TEXTUREDIR"skybox/Right.bmp", TEXTUREDIR"skybox/Left.bmp",
-		TEXTUREDIR"skybox/Top.bmp", TEXTUREDIR"skybox/Bottom.bmp",
-		TEXTUREDIR"skybox/Front.bmp", TEXTUREDIR"skybox/Back.bmp",
+		TEXTUREDIR"hw_glacier/Right.tga", TEXTUREDIR"hw_glacier/Left.tga",
+		TEXTUREDIR"hw_glacier/Up.tga", TEXTUREDIR"hw_glacier/Down.tga",
+		TEXTUREDIR"hw_glacier/Front.tga", TEXTUREDIR"hw_glacier/Back.tga",
 		SOIL_LOAD_RGB,
 		SOIL_CREATE_NEW_ID, 0
 	);
@@ -110,7 +99,7 @@ MountainScene::MountainScene(Renderer * renderer) : Scene(renderer) {
 	lights[2]->SetPosition(Vector3(-heightMap->RAW_WIDTH * HEIGHTMAP_X, 0.0f, heightMap->RAW_WIDTH * HEIGHTMAP_Z / 2.0f));
 	lights[2]->SetRadius(heightMap->RAW_WIDTH * HEIGHTMAP_X * 8.0f);
 
-	renderer->projMatrix = Matrix4::Perspective(1.0f, 22999.0f,
+	renderer->projMatrix = Matrix4::Perspective(1.0f, 15000.0f,
 		(float)renderer->width / (float)renderer->height, 45.0f);
 
 	// Generate our scene depth texture ...
@@ -133,21 +122,11 @@ MountainScene ::~MountainScene(void) {
 }
 
 void MountainScene::UpdateScene(float msec) {
-	emitter->SetPosition(camera->GetPosition() + Vector3(0,200,0));
-	emitter->SetDestructionHeight(camera->GetPosition().y - 300);
-	emitter->Update(msec);
 	camera->UpdateCamera(msec);
 	camera->BuildViewMatrix();
 	frameFrustum.FromMatrix(renderer->projMatrix*renderer->viewMatrix);
 
 	waterRotate += msec / 1000.0f;
-
-	if (oscillation > PI / 2.0f && !emitter->GetEnabled()) {
-		emitter->Toggle();
-	}
-	if (oscillation > 3 * PI / 2.0f && emitter->GetEnabled()) {
-		emitter->Toggle();
-	}
 
 	if (oscillation > 2 * PI) { 
 		oscillation = 0.0f; 
@@ -171,10 +150,7 @@ void MountainScene::UpdateScene(float msec) {
 		}
 	}
 
-
 	oscillation += (msec * 0.00025f);
-
-
 }
 
 void MountainScene::RenderScene() {
@@ -182,17 +158,17 @@ void MountainScene::RenderScene() {
 	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-	renderer->projMatrix = Matrix4::Perspective(1.0f, 22999.0f, (float)renderer->width / (float)renderer->height, 45.0f);
+	renderer->projMatrix = Matrix4::Perspective(1.0f, 15000.0f,
+		(float)renderer->width / (float)renderer->height, 45.0f);
 	renderer->UpdateShaderMatrices();
 
 	DrawSkybox();
 	DrawHeightmap();
 	DrawWater();
-	DrawSnow();
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	DrawPostProcess();	
+	DrawPostProcess(&bufferColourTex[0]);
 
 	PresentScene();
 }
@@ -200,14 +176,22 @@ void MountainScene::RenderScene() {
 void MountainScene::DrawSkybox() {
 	renderer->viewMatrix = camera->BuildViewMatrix();
 
+	glDisable(GL_CULL_FACE);
 	glDepthMask(GL_FALSE);
+	glDisable(GL_DEPTH_TEST);
 	renderer->SetCurrentShader(skyboxShader);
 
+	glUniform1i(glGetUniformLocation(renderer->currentShader->GetProgram(),
+		"cubeTex"), 2);
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
 	renderer->UpdateShaderMatrices();
 	quad2->Draw();
 
 	glUseProgram(0);
 	glDepthMask(GL_TRUE);
+	glEnable(GL_DEPTH_TEST);
 }
 
 void MountainScene::DrawHeightmap() {
@@ -216,8 +200,6 @@ void MountainScene::DrawHeightmap() {
 	offset = ((sin(oscillation) * 400)) + 400;
 	glUniform1f(glGetUniformLocation(renderer->currentShader->GetProgram(), "offset"), offset);
 
-	//Vector4 tint(161.0f / 256.0f, 37.0f / 256.0f, 27.0f / 256.0f, 1);
-	//Vector4 tint(0.545, 0.271, 0.075, 1);
 	renderer->SetShaderLight(lights);
 
 	Vector4 tint(1, 1, 1, 0);
@@ -310,33 +292,33 @@ void MountainScene::PresentScene() {
 	ClearNodeLists();
 }
 
-void MountainScene::DrawSnow()
-{
-	glClearColor(0, 0, 0, 1);
-	renderer->SetCurrentShader(particleShader);
-
-	renderer->viewMatrix = camera->BuildViewMatrix();
-	renderer->modelMatrix.ToIdentity();
-	renderer->textureMatrix.ToIdentity();
-	renderer->projMatrix = Matrix4::Perspective(1.0f, 22999.0f, (float)renderer->width / (float)renderer->height, 45.0f);
-
-	glUniform1i(glGetUniformLocation(renderer->currentShader->GetProgram(), "diffuseTex"), 0);
-
-	SetShaderParticleSize(emitter->GetParticleSize());
-	emitter->SetParticleRate(1.0f);
-	emitter->SetParticleSize(10.0f);
-	emitter->SetParticleVariance(1.0f);
-	emitter->SetLaunchParticles(2.0f);
-	emitter->SetParticleLifetime(2000.0f);
-	emitter->SetParticleSpeed(Vector3(0.0f,0.1f,0.0f));
-
-	renderer->UpdateShaderMatrices();
-
-	emitter->Draw();
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	glUseProgram(0);
-}
+//void MountainScene::DrawSnow()
+//{
+//	glClearColor(0, 0, 0, 1);
+//	renderer->SetCurrentShader(particleShader);
+//
+//	renderer->viewMatrix = camera->BuildViewMatrix();
+//	renderer->modelMatrix.ToIdentity();
+//	renderer->textureMatrix.ToIdentity();
+//	renderer->projMatrix = Matrix4::Perspective(1.0f, 22999.0f, (float)renderer->width / (float)renderer->height, 45.0f);
+//
+//	glUniform1i(glGetUniformLocation(renderer->currentShader->GetProgram(), "diffuseTex"), 0);
+//
+//	SetShaderParticleSize(emitter->GetParticleSize());
+//	emitter->SetParticleRate(1.0f);
+//	emitter->SetParticleSize(10.0f);
+//	emitter->SetParticleVariance(1.0f);
+//	emitter->SetLaunchParticles(2.0f);
+//	emitter->SetParticleLifetime(2000.0f);
+//	emitter->SetParticleSpeed(Vector3(0.0f,0.1f,0.0f));
+//
+//	renderer->UpdateShaderMatrices();
+//
+//	emitter->Draw();
+//	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+//
+//	glUseProgram(0);
+//}
 
 void MountainScene::EnableScene() {
 	camera->SetPosition(Vector3(heightMap->RAW_WIDTH * HEIGHTMAP_X / 2.0f,

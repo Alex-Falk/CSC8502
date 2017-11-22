@@ -31,12 +31,14 @@ public:
 	void DrawNode(SceneNode * n);
 	void ClearNodeLists();
 
-	void DrawPostProcess();
+	void DrawPostProcess(GLuint * texture);
 
 	void setCameraControl(bool b) { camera->setControls(b); }
 
 protected:
 	void SetShaderParticleSize(float f);	//And a new setter
+
+	virtual void GenerateScreenTexture(GLuint & into, bool depth = false);
 
 	Renderer * renderer;
 	SceneNode * root;

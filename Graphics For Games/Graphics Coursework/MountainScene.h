@@ -24,7 +24,6 @@ protected:
 	void				DrawWater();
 	void				DrawSkybox();
 	void				PresentScene();
-	void				DrawSnow();
 
 	Shader *			lightShader;
 	Shader *			reflectShader;

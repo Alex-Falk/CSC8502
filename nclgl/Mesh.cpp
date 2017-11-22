@@ -264,7 +264,6 @@ void Mesh::Draw()
 		glDrawArrays(type, 0, numVertices);
 	}
 	glBindVertexArray(0);
-	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void Mesh::GenerateTangents() {

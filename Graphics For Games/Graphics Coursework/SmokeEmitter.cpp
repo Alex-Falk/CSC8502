@@ -22,15 +22,11 @@ void SmokeEmitter::Update(float msec) {
 		if (p->lifetime <= 0.0f || p->position.y < 0) {
 			freeList.push_back(p);
 			i = particles.erase(i);
+
 		}
-		else {
-
-			
+		else {	
 			p->position += (p->velocity*msec);
-
 			p->velocity -= Vector3(0, msec*0.0005f, 0);
-			
-
 			++i;
 		}
 	}
@@ -38,6 +34,7 @@ void SmokeEmitter::Update(float msec) {
 	if (particles.size() > largestSize) {
 		ResizeArrays();
 	}
+
 }
 
 void SmokeEmitter::Draw() {

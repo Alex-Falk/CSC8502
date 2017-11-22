@@ -37,32 +37,14 @@ Scene::Scene(Renderer * renderer)
 		return;
 	}
 
-	glGenTextures(1, &bufferDepthTex);
-	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, renderer->width, renderer->height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
 
-	// And our colour texture ...
+	GenerateScreenTexture(bufferDepthTex, true);
+
 	for (int i = 0; i < 3; ++i) {
-		glGenTextures(1, &bufferColourTex[i]);
-		glBindTexture(GL_TEXTURE_2D, bufferColourTex[i]);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, renderer->width, renderer->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		GenerateScreenTexture(bufferColourTex[i]);
 	}
 
-	glGenTextures(1, &processColourTex);
-	glBindTexture(GL_TEXTURE_2D, processColourTex);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, renderer->width, renderer->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	GenerateScreenTexture(processColourTex);
 
 	glGenFramebuffers(1, &bufferFBO); // We ’ll render the scene into this
 	glGenFramebuffers(1, &processFBO); // And do post processing in this
@@ -123,7 +105,6 @@ void Scene::DrawNode(SceneNode * n) {
 		renderer->tempMatrix = renderer->shadowMatrix * renderer->modelMatrix;
 
 		renderer->UpdateShaderMatrices();
-	
 
 		n->Draw();
 	}
@@ -134,7 +115,7 @@ void Scene::ClearNodeLists() {
 	nodeList.clear();
 }
 
-void Scene::DrawPostProcess() {
+void Scene::DrawPostProcess(GLuint * texture) {
 	glDisable(GL_DEPTH_TEST);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
@@ -150,7 +131,7 @@ void Scene::DrawPostProcess() {
 		renderer->viewMatrix.ToIdentity();
 		renderer->UpdateShaderMatrices();
 
-		quad->SetTexture(bufferColourTex[0]);
+		quad->SetTexture(*texture);
 		quad->Draw();
 	}
 
@@ -164,10 +145,10 @@ void Scene::DrawPostProcess() {
 		renderer->viewMatrix.ToIdentity();
 		renderer->UpdateShaderMatrices();
 
-		glUniform1f(glGetUniformLocation(renderer->currentShader->GetProgram(), "contrast"), 4.0f);
-		glUniform1f(glGetUniformLocation(renderer->currentShader->GetProgram(), "brightness"), 1.0f);
+		glUniform1f(glGetUniformLocation(renderer->currentShader->GetProgram(), "contrast"), 2.0f);
+		glUniform1f(glGetUniformLocation(renderer->currentShader->GetProgram(), "brightness"), 0.5f);
 
-		quad->SetTexture(bufferColourTex[0]);
+		quad->SetTexture(*texture);
 		quad->Draw();
 	}
 
@@ -175,7 +156,7 @@ void Scene::DrawPostProcess() {
 		renderer->SetCurrentShader(combineProcessShader);
 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, bufferColourTex[0]);
+		glBindTexture(GL_TEXTURE_2D, *texture);
 
 		glUniform1i(glGetUniformLocation(renderer->currentShader->GetProgram(), "isSobel"), renderer->sobelOn);
 		glUniform1i(glGetUniformLocation(renderer->currentShader->GetProgram(), "isContrast"), renderer->contrastOn);
@@ -202,7 +183,7 @@ void Scene::DrawPostProcess() {
 	renderer->viewMatrix.ToIdentity();
 	renderer->UpdateShaderMatrices();
 
-	quad->SetTexture(bufferColourTex[0]);
+	quad->SetTexture(*texture);
 	quad->Draw();
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -214,4 +195,19 @@ void Scene::DrawPostProcess() {
 void Scene::SetShaderParticleSize(float f)
 {
 	glUniform1f(glGetUniformLocation(renderer->currentShader->GetProgram(), "particleSize"), f);
+}
+
+void Scene::GenerateScreenTexture(GLuint & into, bool depth) {
+	glGenTextures(1, &into);
+	glBindTexture(GL_TEXTURE_2D, into);
+
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, depth ? GL_DEPTH24_STENCIL8 : GL_RGBA8, renderer->width, renderer->height, 0, depth
+		? GL_DEPTH_COMPONENT : GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
 }

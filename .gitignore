@@ -44,3 +44,5 @@ Graphics For Games/Extra - Geometry Shaders/
 Graphics For Games/Extra - Texture Atlas/
 
 *.vcxproj
+
+*.csv

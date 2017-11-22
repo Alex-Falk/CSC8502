@@ -20,6 +20,8 @@ public:
 	virtual void		RenderScene();
 	virtual void		UpdateScene(float msec);
 
+	virtual void		FillBuffers();
+
 	virtual void		EnableScene();
 	virtual void		ResetScene();
 
@@ -29,26 +31,42 @@ protected:
 	void				DrawSkybox();
 	void				PresentScene();
 	void				DrawSmoke();
+	void				DrawPointLights();
+	void				CombineBuffers();
 
 	Shader *			tessShader;
 	Shader *			skyboxShader;
 	Shader *			testShader;
 	Shader *			reflectShader;
 	Shader *			particleShader;
+	Shader *			combineShader;
+	Shader *			pointLightShader;
 
 	SmokeEmitter *		emitter;
 
-	Light *				light;
+	vector<Light *>		pointLights;
 
 	Mesh *				heightMap;
+	Mesh *				combineQuad;
 	Mesh *				quad2;
 	Mesh *				skybox;
-
-	Light *				lights[5];
+	OBJMesh *			sphere;
 
 	GLuint				cubeMap;
 	GLuint				terrainTex;
 	GLuint				terrainNormalTex;
+
+	GLuint				pointLightFBO;
+	GLuint				lightEmissiveTex;
+	GLuint				lightSpecularTex;
+
+	GLuint				buffer2FBO;
+	GLuint				buffer2ColourTex; // Albedo goes here
+	GLuint				buffer2NormalTex; // Normals go here
+	GLuint				buffer2DepthTex; // Depth goes here
+
+	GLuint				combinedFBO;
+	GLuint				combinedColorTex;
 
 	float				time = 0.0f;
 	float				maxTime = 30.0f;
@@ -56,5 +74,6 @@ protected:
 	float				coolingRatio = 0.0f;
 	float				waterRotate = 0.0f;
 
+	virtual void		GenerateScreenTexture(GLuint & into, bool depth = false);
 
 };

@@ -24,4 +24,7 @@ void main(void)	{
 	else {
 		fragColor 	= diffuse;
 	}
+	if (fragColor.a == 0) {
+		discard;
+	}
 }	

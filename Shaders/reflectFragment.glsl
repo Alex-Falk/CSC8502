@@ -44,5 +44,6 @@ void main ( void ) {
 		newColour 		+= ( lightColour[i] * diffuse * atten )*( diffuse + reflection );
 	}
 	fragColor = newColour * .5;
-	fragColor.a = fragColor.a / 4.;
+	fragColor.rgb += reflection.rgb;
+	fragColor.a = fragColor.a * 0.8;
 }
