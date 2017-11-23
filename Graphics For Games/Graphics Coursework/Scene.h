@@ -32,7 +32,12 @@ public:
 	void DrawPostProcess(GLuint * texture);		// Draw Post processing effects given a processed texture
 
 	void setCameraControl(bool b) { camera->setControls(b); }	// Locks/Unlocks camera controls
+	void toggleManual() { 
+		manualControl = !manualControl;
+		setCameraControl(manualControl);
+	}
 
+	bool isFinished = false;
 protected:
 	void SetShaderParticleSize(float f);		// Set the size of a particle (used in scenes with particle effects)
 
@@ -59,5 +64,7 @@ protected:
 	GLuint processColourTex;
 	GLuint bufferColourTex[3];
 	GLuint bufferDepthTex;
+
+	bool manualControl = false;
 };
 

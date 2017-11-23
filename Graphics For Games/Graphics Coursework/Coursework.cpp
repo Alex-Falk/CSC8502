@@ -3,7 +3,7 @@
 #include "../../NCLGL/window.h"
 #include "Renderer.h"
 int main() {
-	Window w("Graphics Coursework", 1208, 720, false); //This is all boring win32 window creation stuff!
+	Window w("Graphics Coursework", 1280, 720, false); //This is all boring win32 window creation stuff!
 	if (!w.HasInitialised()) {
 		return -1;
 	}
@@ -78,6 +78,14 @@ int main() {
 		if (Window::GetKeyboard()->KeyTriggered(KEYBOARD_NUMPAD3) || (Window::GetKeyboard()->KeyTriggered(KEYBOARD_3))) {
 			renderer.SetControlledScene(2);
 			renderer.SetActiveScene(2);
+		}
+
+		if (Window::GetKeyboard()->KeyTriggered(KEYBOARD_L)) {
+			renderer.ToggleManual();
+		}
+
+		if (Window::GetKeyboard()->KeyTriggered(KEYBOARD_P)) {
+			renderer.ToggleScenePause();
 		}
 
 		// Reset Scene

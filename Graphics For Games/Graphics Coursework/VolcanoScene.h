@@ -68,10 +68,11 @@ protected:
 	GLuint				combinedColorTex;
 
 	float				time = 0.0f;
-	float				maxTime = 30.0f;
+	float				maxTime = 25.0f;
 	float				scalefactor = 0.0f;
 	float				coolingRatio = 0.0f;
 	float				waterRotate = 0.0f;
+	float				cameraDistance = 0.0f;
 
 	virtual void		GenerateScreenTexture(GLuint & into, bool depth = false);
 

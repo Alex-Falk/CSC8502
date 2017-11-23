@@ -69,19 +69,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Floor.h" />
     <ClInclude Include="MountainScene.h" />
     <ClInclude Include="ParticleEmitter.h" />
     <ClInclude Include="RainyScene.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="SmokeEmitter.h" />
-    <ClInclude Include="Terrain.h" />
     <ClInclude Include="TextMesh.h" />
     <ClInclude Include="VolcanoScene.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Floor.cpp" />
     <ClCompile Include="MountainScene.cpp" />
     <ClCompile Include="ParticleEmitter.cpp" />
     <ClCompile Include="RainyScene.cpp" />
@@ -89,7 +86,6 @@
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Coursework.cpp" />
     <ClCompile Include="SmokeEmitter.cpp" />
-    <ClCompile Include="Terrain.cpp" />
     <ClCompile Include="TextMesh.cpp" />
     <ClCompile Include="VolcanoScene.cpp" />
   </ItemGroup>

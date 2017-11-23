@@ -181,7 +181,30 @@ VolcanoScene::VolcanoScene(Renderer * renderer) : Scene(renderer) {
 }
 
 VolcanoScene ::~VolcanoScene(void) {
+	delete	tessShader;
+	delete	skyboxShader;
+	delete	testShader;
+	delete	waterTessShader;
+	delete	particleShader;
+	delete	combineShader;
+	delete	pointLightShader;
 
+	delete	emitter;
+	delete	heightMap;
+	delete	combineQuad;
+	delete quad2;
+	delete skybox;
+	delete sphere;
+
+	glDeleteTextures(1, &buffer2ColourTex);
+	glDeleteTextures(1, &buffer2DepthTex);
+	glDeleteTextures(1, &buffer2NormalTex);
+	glDeleteTextures(1, &combinedColorTex);
+	glDeleteTextures(1, &lightEmissiveTex);
+	glDeleteTextures(1, &lightSpecularTex);
+	glDeleteFramebuffers(1, &buffer2FBO);
+	glDeleteFramebuffers(1, &combinedFBO);
+	glDeleteFramebuffers(1, &pointLightFBO);
 }
 
 void VolcanoScene::UpdateScene(float msec) {
@@ -196,6 +219,12 @@ void VolcanoScene::UpdateScene(float msec) {
 	if (time < maxTime) {
 		scalefactor = time / maxTime;
 		emitter->SetPosition(Vector3(793, (scalefactor) * YSCALE - 20, 780));
+		float angle = (2*PI*time) / maxTime;
+		if (!manualControl) {
+			camera->SetPosition(Vector3(793 + cameraDistance*cos(angle), 100 + 40 * sin(angle), 780 + cameraDistance*sin(angle)));
+			camera->SetYaw(90 - RadToDeg(angle));
+		}
+
 	}
 	else if (time > maxTime+2 && time < maxTime+4) {
 		if (emitter->GetEnabled()) {
@@ -501,6 +530,7 @@ void VolcanoScene::ResetScene() {
 	camera->SetYaw(318);
 	emitter->ClearParticles();
 	emitter->SetPosition(Vector3(793, (scalefactor)* YSCALE - 20, 780));
+	cameraDistance = (Vector3(144, 0, 1540) - Vector3(793, 0, 780)).Length();
 
 	if (!emitter->GetEnabled()) {
 		emitter->Toggle();

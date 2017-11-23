@@ -27,7 +27,7 @@ protected:
 	Shader *			lightShader;
 	Shader *			reflectShader;
 	Shader *			skyboxShader;
-	GLuint				waterTex;
+	
 
 	HeightMap *			heightMap;
 	Mesh *				EnvironmentQuad;
@@ -35,6 +35,7 @@ protected:
 	Light *				lights[5];
 
 	GLuint				cubeMap;
+	GLuint				waterTex;
 
 	float				waterRotate;
 
@@ -44,4 +45,5 @@ protected:
 	int					randLight;
 	float				r;
 
+	bool				night = false;
 };

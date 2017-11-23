@@ -84,20 +84,27 @@ Renderer::Renderer(Window & parent) : OGLRenderer(parent)
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
 	ResetScenes();
+	switchActiveCamera(false, false, false);
 }
 
 Renderer::~Renderer(void) {	
-	delete currentScene;
+	delete scenes[0];
+	delete scenes[1];
+	delete scenes[2];
 	delete camera;
 	delete quadShader;
 	delete textShader;
+	delete quad;
+	delete textquad;
 	delete root;
 	
 	currentShader = 0;
-	glDeleteTextures(2, bufferColourTex);
+	glDeleteTextures(4, bufferColourTex);
 	glDeleteTextures(1, &bufferDepthTex);
 	glDeleteFramebuffers(1, &bufferFBO);
+	glDeleteFramebuffers(1, &hudFBO);
 
+	
 }
 
 
@@ -159,14 +166,19 @@ void Renderer::UpdateScene(float msec) {
 			}
 		}
 
-		currentScene->UpdateScene(msec);
+		if (!scenepaused) {
+			currentScene->UpdateScene(msec);
+		}	
 	}
 	// Else update all 3 scenes
 	else {
 		root->Update(msec);
-		scenes[0]->UpdateScene(msec);
-		scenes[1]->UpdateScene(msec);
-		scenes[2]->UpdateScene(msec);
+		if (!scenepaused) {
+			scenes[0]->UpdateScene(msec);
+			scenes[1]->UpdateScene(msec);
+			scenes[2]->UpdateScene(msec);
+		}
+
 	}
 }
 
@@ -187,7 +199,8 @@ void Renderer::NextScene() {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	currentScene = scenes[currentSceneIdx];
-	SetControlledScene(currentSceneIdx);
+	switchActiveCamera(false, false, false);
+	//SetControlledScene(currentSceneIdx);
 	currentScene->ResetScene();
 }
 
@@ -208,7 +221,8 @@ void Renderer::PreviousScene() {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	currentScene = scenes[currentSceneIdx];
-	SetControlledScene(currentSceneIdx);
+	switchActiveCamera(false, false, false);
+	//SetControlledScene(currentSceneIdx);
 	currentScene->ResetScene();
 }
 
@@ -218,7 +232,6 @@ void Renderer::switchActiveCamera(bool cama,bool camb,bool camc) {
 	scenes[1]->setCameraControl(camb);
 	scenes[2]->setCameraControl(camc);
 }
-
 
 void Renderer::PresentScene() {
 
@@ -231,8 +244,13 @@ void Renderer::PresentScene() {
 	// ------------------------------------------------------------------------------------------------------------------
 	// DRAW BASIC TEXT
 	// ------------------------------------------------------------------------------------------------------------------
-	float ts = 14.0f;
+	float ts = 16.0f;
 	int i = 0;
+
+	if (scenepaused) {
+		DrawText("------PAUSED------", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("------------------", Vector3(0, i * ts, 0), ts); ++i;
+	}
 
 	DrawText("Framerate: " + to_string((int)FPS), Vector3(0, i*ts, 0), ts); ++i;
 	string sobel_on = "OFF";
@@ -258,6 +276,7 @@ void Renderer::PresentScene() {
 			DrawText("Spotlight", Vector3(0, i * ts, 0), ts); ++i;
 			DrawText("Spotlight cone", Vector3(0, i * ts, 0), ts); ++i;
 			DrawText("Realtime Shadows", Vector3(0, i * ts, 0), ts); ++i;
+			DrawText("Scene Management", Vector3(0, i * ts, 0), ts); ++i;
 			break;
 		case 1:
 			DrawText("------------------", Vector3(0, i * ts, 0), ts); ++i;
@@ -291,6 +310,7 @@ void Renderer::PresentScene() {
 		DrawText("------------------", Vector3(0, i * ts, 0), ts); ++i;
 		DrawText("CONTROLS", Vector3(0, i * ts, 0), ts); ++i;
 		DrawText("WASD \tCamera control", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("L    \tLock camera", Vector3(0, i * ts, 0), ts); ++i;
 		DrawText("Z/X  \tCamera speed", Vector3(0, i * ts, 0), ts); ++i;
 		DrawText("1-3  \tScene selection", Vector3(0, i * ts, 0), ts); ++i;
 		DrawText("7    \tSobel", Vector3(0, i * ts, 0), ts); ++i;
@@ -325,11 +345,16 @@ void Renderer::PresentSplitScreen() {
 	// DRAW BASIC TEXT
 	// ------------------------------------------------------------------------------------------------------------------
 
-	float ts = 14.0f;
+	float ts = 16.0f;
 	int i = 0;
 
 	int maxi = (int)(height / ts);
 	i = (maxi / 2) + 1;
+
+	if (scenepaused) {
+		DrawText("------PAUSED------", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("------------------", Vector3(0, i * ts, 0), ts); ++i;
+	}
 
 	SetCurrentShader(textShader);
 	DrawText("Framerate: " + to_string((int)FPS), Vector3(0, i * ts, 0), ts); ++i;

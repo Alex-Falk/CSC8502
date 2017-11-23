@@ -1,0 +1,25 @@
+﻿  BoundingVolume.cpp
+  Camera.cpp
+  Frustum.cpp
+  GameTimer.cpp
+  HeightMap.cpp
+HeightMap.cpp(72): warning C4018: '<': signed/unsigned mismatch
+  Keyboard.cpp
+  Matrix4.cpp
+  MD5Anim.cpp
+  MD5FileData.cpp
+  MD5Mesh.cpp
+  MD5Node.cpp
+  Mesh.cpp
+Mesh.cpp(132): warning C4018: '<': signed/unsigned mismatch
+  Mouse.cpp
+  OBJMesh.cpp
+  OGLRenderer.cpp
+  Plane.cpp
+  Quaternion.cpp
+  SceneNode.cpp
+  Shader.cpp
+  Spotlight.cpp
+  Compiling...
+  Window.cpp
+  nclgl.vcxproj -> D:\Projects\CSC8502\Graphics For Games\Release\nclgl.lib

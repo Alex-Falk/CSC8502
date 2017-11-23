@@ -89,6 +89,7 @@ Scene::~Scene() {
 	delete quad;
 	delete quadShader;
 	delete sobelShader;
+	delete contrastShader;
 	delete combineProcessShader;
 
 	glDeleteTextures(3, bufferColourTex);

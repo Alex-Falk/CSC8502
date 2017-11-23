@@ -1,6 +1,5 @@
 #include "RainyScene.h"
 
-
 RainyScene::RainyScene(Renderer * renderer) : Scene (renderer)
 {
 	// ------------------------------------------------------------------------------------------------------------------
@@ -31,13 +30,6 @@ RainyScene::RainyScene(Renderer * renderer) : Scene (renderer)
 	renderer->SetTextureRepeating(heightMap->GetTexture(), true);
 	renderer->SetTextureRepeating(heightMap->GetBumpMap(), true);
 
-	//TODO: Fix or remove this
-	wall = Mesh::GeneratePlane(1,4);
-	wall->SetTexture(SOIL_load_OGL_texture(TEXTUREDIR"brick.tga"
-		, SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-	wall->SetBumpMap(SOIL_load_OGL_texture(TEXTUREDIR"brickDOT3.tga"
-		, SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS));
-
 	hellData = new MD5FileData(MESHDIR"hellknight.md5mesh");
 	hellNode = new MD5Node(*hellData);
 
@@ -47,16 +39,11 @@ RainyScene::RainyScene(Renderer * renderer) : Scene (renderer)
 
 
 	SceneNode * heightNode = new SceneNode(heightMap);
-	SceneNode * wallNode = new SceneNode(wall);
-
-	wallNode->SetTransform(Matrix4::Translation(Vector3((257 * HEIGHTMAP_X) / 2.0f, 800.0f, (257 * HEIGHTMAP_X) / 2.0f)));
-	wallNode->SetModelScale(Vector3(100, 1, 100));
 		
 	root->AddChild(heightNode);
 	hellNodePos = Vector3((257 * HEIGHTMAP_X) / 2.0f, 800.0f, (257 * HEIGHTMAP_X) / 2.0f);
 	hellNode->SetTransform(Matrix4::Translation(hellNodePos));
 	root->AddChild(hellNode);
-	root->AddChild(wallNode);
 	
 	// ------------------------------------------------------------------------------------------------------------------
 	// SHADERS
@@ -151,7 +138,7 @@ void RainyScene::RenderScene()
 	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-	renderer->projMatrix = Matrix4::Perspective(1.0f, 22999.0f, (float)renderer->width / (float)renderer->height, 45.0f);
+	renderer->projMatrix = Matrix4::Perspective(1.0f, 22999.0f, (float)renderer->width / (float)renderer->height, camfov);
 	renderer->UpdateShaderMatrices();
 
 	DrawCombinedScene();
@@ -173,45 +160,81 @@ void RainyScene::UpdateScene(float msec)
 		Matrix4::Rotation(hellNodeRot.z, Vector3(0, 0, 1)));
 	hellNode->Update(msec);
 	camera->UpdateCamera(msec);
-	
-	// Upadte Hellnode behaviour
-	// Spotlight increases
 	float fov = light->GetFov();
-	if (fov < 20.0f) {
-		fov += msec * 0.1f;
-		light->SetFov(fov);
-	}
-	// Hellknight falls
-	else if (hellNodePos.y > 10.0f) {
-		hellNodePos.y -=  msec * 0.8f;
-	}
-	// Hellknight gets up
-	else if (hellNodeRot.z > 0.0f) {
-		hellNodeRot.z -= msec * 0.05f;
-		if (hellNodePos.y > 0.0f) {
-			hellNodePos.y -= msec * 0.05f;
+
+	switch (step) {
+	case LIGHT_GROW:
+		if (fov < 20.0f) {
+			fov += msec * 0.005f;
+			light->SetFov(fov);
 		}
-	}
-	// Hellknight turns
-	else if (hellNodeRot.y < 90.0f) {
-		hellNodeRot.y += msec * 0.05f;
-	}
-	// Hellknight walks off
-	else if (!isWalking && hellNodePos.z < origin.z + 600.0f) {
-		hellNode->PlayAnim(MESHDIR"walk7.md5anim");
-		isWalking = true;
-	}
-	else if (hellNode->IsLastFrame() && isWalking && hellNodePos.z < origin.z + 600.0f) {
-		hellNodePos.z += 60;
-	}
-	// hellknight stops
-	else if (isWalking && hellNodePos.z >= origin.z + 600.0f) {
-		hellNode->PlayAnim(MESHDIR"idle2.md5anim");
-		isWalking = false;
-	}
-	// Scene Resets to the beginning
-	else if (!isWalking && hellNodePos.z >= origin.z + 600.0f) {
-		ResetScene();
+		else { step = FALLING; }
+		break;
+
+	case FALLING:
+		if (hellNodePos.y > 10.0f) {
+			hellNodePos.y -= msec * 0.8f;
+		}
+		else { step = GETTING_UP; }
+		break;
+
+	case GETTING_UP:
+		if (hellNodeRot.z > 0.0f) {
+			hellNodeRot.z -= msec * 0.05f;
+			if (hellNodePos.y > 0.0f) {
+				hellNodePos.y -= msec * 0.05f;
+			}
+		}
+		else { step = WAITING; }
+		break;
+
+	case WAITING:
+		if (timer < 5.0f) {
+			timer += msec * 0.001f;
+		}
+		else { step = TURNING; timer = 0.0f; }
+		break;
+
+	case TURNING:
+		if (hellNodeRot.y < 90.0f) {
+			hellNodeRot.y += msec * 0.05f;
+		}
+		else { step = WALKING; }
+		break;
+
+	case WALKING:
+		if (!isWalking && hellNodePos.z < origin.z + 400.0f) {
+			hellNode->PlayAnim(MESHDIR"walk7.md5anim");
+			isWalking = true;
+		}
+		else if (hellNode->IsLastFrame() && isWalking && hellNodePos.z < origin.z + 400.0f) {
+			hellNodePos.z += 125;
+			hellNode->PlayAnim(MESHDIR"walk7.md5anim");
+		}
+		if (hellNodePos.z > origin.z + 400.0f) {
+			hellNode->PlayAnim(MESHDIR"idle2.md5anim");
+			isWalking = false;
+			step = ZOOMING;
+		}
+		break;
+
+	case ZOOMING:
+		if (camfov > 25.0f) { camfov -= msec * 0.01f; }
+		else { step = DRAWING_TEXT; }
+		break;
+
+	case DRAWING_TEXT:
+		if (timer < 3.0f) {
+			timer += msec * 0.001f;
+			drawingText = true;
+		}
+		else { step = FINISHED; }
+		break;
+
+	case FINISHED:
+		drawingText = false;
+		isFinished = true;
+		break;
 	}
 }
 
@@ -253,7 +276,6 @@ void RainyScene::DrawShadowScene()
 
 	DrawMesh();
 	DrawFloor();
-	DrawWall();
 
 	glUseProgram(0);
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -293,7 +315,6 @@ void RainyScene::DrawCombinedScene()
 	renderer->UpdateShaderMatrices();
 
 	DrawFloor();
-	DrawWall();
 
 	renderer->SetCurrentShader(floorShader);
 	glUniform1i(glGetUniformLocation(renderer->currentShader->GetProgram(),
@@ -326,6 +347,7 @@ void RainyScene::DrawCombinedScene()
 	glUseProgram(0);
 
 	DrawRain();
+	if (drawingText) { DrawSceneText(); }
 }
 
 void RainyScene::DrawMesh()
@@ -361,30 +383,12 @@ void RainyScene::DrawFloor()
 	ClearNodeLists();
 }
 
-void RainyScene::DrawWall()
-{
-	BuildNodeLists(root->GetChild(2));
-	SortNodeLists();
-	renderer->modelMatrix.ToIdentity();
-	renderer->tempMatrix = renderer->shadowMatrix * renderer->modelMatrix;
-
-	glUniformMatrix4fv(glGetUniformLocation(renderer->currentShader->GetProgram()
-		, "shadowMatrix"), 1, false, *& renderer->tempMatrix.values);
-	glUniformMatrix4fv(glGetUniformLocation(renderer->currentShader->GetProgram()
-		, "modelMatrix"), 1, false, *&	renderer->modelMatrix.values);
-
-	DrawNodes();
-	ClearNodeLists();
-}
-
 void RainyScene::DrawRain()
 {	
 	glClearColor(0, 0, 0, 1);
 	renderer->SetCurrentShader(particleShader);
 
 	renderer->viewMatrix = camera->BuildViewMatrix();
-
-	renderer->projMatrix = Matrix4::Perspective(1.0f, 22999.0f, (float)renderer->width / (float)renderer->height, 45.0f);
 
 	glUniform1i(glGetUniformLocation(renderer->currentShader->GetProgram(), "diffuseTex"), 0);
 
@@ -413,6 +417,13 @@ void RainyScene::DrawRain()
 	glUseProgram(0);
 }
 
+void RainyScene::DrawSceneText()
+{
+	renderer->SetCurrentShader(renderer->textShader);
+	DrawText("MR. HELLKNIGHT", Vector3(origin.x , 1.0f, origin.z - 7 * 12.0f),
+		12.0f);
+}
+
 void RainyScene::EnableScene() {
 	camera->SetPosition(Vector3(origin.x - 500.0f, 350.0f, origin.z));
 	camera->SetPitch(-30);
@@ -430,4 +441,23 @@ void RainyScene::ResetScene() {
 	hellNode->SetTransform(Matrix4::Translation(hellNodePos));
 	hellNode->PlayAnim(MESHDIR"idle2.md5anim");
 	isWalking = false;
+	drawingText = false;
+	isFinished = false;
+
+	timer = 0.0f;
+	camfov = 45.0f;
+	step = LIGHT_GROW;
+}
+
+void RainyScene::DrawText(const std::string &text, const Vector3 &position, const float size) {
+	//Create a new temporary TextMesh, using our line of text and our font
+	TextMesh* mesh = new TextMesh(text, *(renderer->basicFont));
+
+	renderer->modelMatrix = Matrix4::Translation(position) * Matrix4::Rotation(-90,Vector3(0,1,0)) * Matrix4::Rotation(-90,Vector3(1,0,0)) * Matrix4::Scale(Vector3(size, size, 1));
+	renderer->viewMatrix = camera->BuildViewMatrix();
+
+	renderer->UpdateShaderMatrices();
+	mesh->Draw();
+
+	delete mesh; //Once it's drawn, we don't need it anymore!
 }

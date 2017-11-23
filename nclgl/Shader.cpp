@@ -43,7 +43,7 @@ Shader::Shader(string vFile, string fFile, string cFile, string eFile, string gF
 
 Shader::~Shader(void)
 {
-	for (int i = 0; i < 3; ++i)
+	for (int i = 0; i < 5; ++i)
 	{
 		glDetachShader(program, objects[i]);
 		glDeleteShader(objects[i]);

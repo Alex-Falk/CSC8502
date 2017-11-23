@@ -2,15 +2,17 @@
 #include "Scene.h"
 #include "ParticleEmitter.h"
 #include "Renderer.h"
-#include "Floor.h"
 #include "../../nclgl/MD5Mesh.h"
 #include "../../nclgl/MD5Node.h"
+#include "TextMesh.h"
 
 #define SHADOWSIZE 2048		// Size of Texture used to create shadowmap
 
 class Scene;
 class HeightMap;
 class Camera;
+
+enum SceneStep{LIGHT_GROW,FALLING,GETTING_UP,WAITING,TURNING,WALKING,ZOOMING,DRAWING_TEXT,FINISHED};
 
 class RainyScene :
 	public Scene
@@ -24,6 +26,9 @@ public:
 
 	virtual void		EnableScene();
 	virtual void		ResetScene();				// Reset Scene to starting values
+
+	void DrawText(const std::string &text, const Vector3 &position, const float size);
+
 protected:
 	void				PresentScene();				// Presents this scene to the renderers buffercolourtex[0]
 	
@@ -32,8 +37,8 @@ protected:
 
 	void				DrawMesh();					// Draw hellknight
 	void				DrawFloor();				// Draw ground
-	void				DrawWall();					// draw wall - TODO: make it work
 	void				DrawRain();					// Draw rain particle effect
+	void				DrawSceneText();			// Draw the text on the screen;
 
 	ParticleEmitter*	emitter;					// Rain particle emitter
 
@@ -49,7 +54,6 @@ protected:
 	MD5FileData *		hellData;
 	MD5Node *			hellNode;
 	Mesh *				floor;
-	Mesh *				wall;
 	Spotlight *			light;
 	HeightMap *			heightMap;
 
@@ -57,6 +61,13 @@ protected:
 
 	Vector3				hellNodePos;
 	Vector3				hellNodeRot = Vector3(0, 0, 90);
+
 	bool				isWalking = false;
+	bool				drawingText = false;
+
+	float				camfov = 45.0f;
+	float				timer = 0.0f;
+
+	SceneStep			step;
 };
 

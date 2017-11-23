@@ -37,12 +37,12 @@ void main ( void ) {
 	vec4 newColour 		= vec4(0,0,0,1);
 	for (int i = 0; i < 4; ++i)
 	{	
-
 		float dist 		= length ( lightPos[i] - IN.worldPos );
 		float atten 	= 1.0 - clamp ( dist / lightRadius[i] , 0.2 , 1.0);
 
-		newColour 		+= ( lightColour[i] * diffuse * atten )*( diffuse + reflection );
+		newColour 		+= ( lightColour[i] * diffuse * atten)*( diffuse + reflection);		
 	}
+
 	fragColor = newColour * .5;
 	fragColor.rgb += reflection.rgb;
 	fragColor.a = fragColor.a * 0.8;

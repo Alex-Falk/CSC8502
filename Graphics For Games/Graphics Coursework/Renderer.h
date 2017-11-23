@@ -38,9 +38,10 @@ public:
 		paused = !paused;
 		if (!paused) { sceneTimer = 0.0f; }
 	}
+	virtual void ToggleScenePause() { scenepaused = !scenepaused; }			// Toggles wheter the scene updates or not
 	virtual void ToggleControls() { showControls = !showControls; }			// Toggle Controls display
 	virtual void ToggleFeatures() { showFeatures = !showFeatures; }			// Toggle Feature display
-
+	virtual void ToggleManual() { if (!isSplitScreen) { currentScene->toggleManual(); }; }
 	// ------------------------------------------------------------------------------------------------------------------
 	// GENERAL METHODS
 	// ------------------------------------------------------------------------------------------------------------------
@@ -99,6 +100,7 @@ protected:
 	bool contrastOn = false;
 	bool isSplitScreen = false;
 	bool paused = false;
+	bool scenepaused = true;
 
 	Matrix4 shadowMatrix;
 	Matrix4 tempMatrix;

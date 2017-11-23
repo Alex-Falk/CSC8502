@@ -113,16 +113,13 @@ MountainScene::MountainScene(Renderer * renderer) : Scene(renderer) {
 MountainScene ::~MountainScene(void) {
 	delete heightMap;
 	delete EnvironmentQuad;
+
 	delete reflectShader;
 	delete skyboxShader;
 	delete lightShader;
+
 	delete *lights;
 	renderer->currentShader = 0;
-
-	glDeleteTextures(2, bufferColourTex);
-	glDeleteTextures(1, &bufferDepthTex);
-	glDeleteFramebuffers(1, &bufferFBO);
-	glDeleteFramebuffers(1, &processFBO);
 }
 
 void MountainScene::UpdateScene(float msec) {
@@ -141,12 +138,20 @@ void MountainScene::UpdateScene(float msec) {
 		r*sin(PI+oscillation), camera->GetPosition().z));
 
 	if (lights[1]->GetPosition().y <= 0.0f) {
-		lights[0]->SetPosition(Vector3(rand() % heightMap->RAW_WIDTH * HEIGHTMAP_X,
-			1000, rand() % heightMap->RAW_WIDTH * HEIGHTMAP_Z));
+		
+		if (!night) {
+			Vector3 campos = camera->GetPosition();
+			lights[0]->SetPosition(Vector3(campos.x + 600 + rand() % 2000, 1000, campos.z - 600 - rand() % 2000));
+			night = true;
+		}
+
+
+
 		randLightOsc += (msec * 0.001f);
-		if (randLightOsc > 1.0f) {
+		if (randLightOsc > 0.5f) {
 			randLight = rand() % 4;
 			randLightOsc = 0.0f;
+			lights[0]->SetPosition(lights[0]->GetPosition() + Vector3((rand() % 501) - 250, 0, (rand() % 501) - 250));
 		}
 
 		switch (randLight) {
@@ -155,6 +160,9 @@ void MountainScene::UpdateScene(float msec) {
 		case 2: lights[0]->SetColour(Vector4(0, 1, 0, 1)); break;
 		case 3: lights[0]->SetColour(Vector4(0, 0, 1, 1)); break;
 		}
+	}
+	else {
+		night = false;
 	}
 
 	// Set up oscillation used for lights and snow/water levels Reset to zero if greater than 2PI
