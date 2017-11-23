@@ -173,12 +173,9 @@ void Renderer::UpdateScene(float msec) {
 	// Else update all 3 scenes
 	else {
 		root->Update(msec);
-		if (!scenepaused) {
-			scenes[0]->UpdateScene(msec);
-			scenes[1]->UpdateScene(msec);
-			scenes[2]->UpdateScene(msec);
-		}
-
+		scenes[0]->UpdateScene(msec);
+		scenes[1]->UpdateScene(msec);
+		scenes[2]->UpdateScene(msec);
 	}
 }
 
@@ -318,6 +315,11 @@ void Renderer::PresentScene() {
 		DrawText("TAB  \tToggle Splitscreen", Vector3(0, i * ts, 0), ts); ++i;
 		DrawText("C    \tShow/Hide Controls", Vector3(0, i * ts, 0), ts); ++i;
 		DrawText("F    \tShow/Hide Features", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("PAUSE\tPause/Unpause Scene Rotation", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("P    \tPause/Unpause Current Scene", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("LEFT \tPrevious Scene", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("RIGHT\tNext Scene", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("R    \tReset Scene", Vector3(0, i * ts, 0), ts); ++i;
 	}
 
 	// ------------------------------------------------------------------------------------------------------------------
@@ -351,11 +353,6 @@ void Renderer::PresentSplitScreen() {
 	int maxi = (int)(height / ts);
 	i = (maxi / 2) + 1;
 
-	if (scenepaused) {
-		DrawText("------PAUSED------", Vector3(0, i * ts, 0), ts); ++i;
-		DrawText("------------------", Vector3(0, i * ts, 0), ts); ++i;
-	}
-
 	SetCurrentShader(textShader);
 	DrawText("Framerate: " + to_string((int)FPS), Vector3(0, i * ts, 0), ts); ++i;
 	string sobel_on = "OFF";
@@ -375,11 +372,15 @@ void Renderer::PresentSplitScreen() {
 		DrawText("CONTROLS", Vector3(0, i * ts, 0), ts); ++i;
 		DrawText("WASD \tCamera control", Vector3(0, i * ts, 0), ts); ++i;
 		DrawText("Z/X  \tCamera speed", Vector3(0, i * ts, 0), ts); ++i;
-		DrawText("1-3  \tScene selection", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("1-3  \tScene control selection", Vector3(0, i * ts, 0), ts); ++i;
 		DrawText("7    \tSobel", Vector3(0, i * ts, 0), ts); ++i;
 		DrawText("8    \tContrast", Vector3(0, i * ts, 0), ts); ++i;
 		DrawText("TAB  \tToggle Splitscreen", Vector3(0, i * ts, 0), ts); ++i;
 		DrawText("C    \tShow/Hide Controls", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("PAUSE\tPause/Unpause Scene Rotation", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("LEFT \tPrevious Scene", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("RIGHT\tControl next Scene", Vector3(0, i * ts, 0), ts); ++i;
+		DrawText("R    \tcontrol previous Scene", Vector3(0, i * ts, 0), ts); ++i;
 	}
 
 	// ------------------------------------------------------------------------------------------------------------------

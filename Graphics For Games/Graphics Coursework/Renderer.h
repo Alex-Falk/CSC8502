@@ -38,10 +38,13 @@ public:
 		paused = !paused;
 		if (!paused) { sceneTimer = 0.0f; }
 	}
-	virtual void ToggleScenePause() { scenepaused = !scenepaused; }			// Toggles wheter the scene updates or not
+	virtual void ToggleScenePause() { if(!isSplitScreen) { scenepaused = !scenepaused; }; }			// Toggles wheter the scene updates or not
 	virtual void ToggleControls() { showControls = !showControls; }			// Toggle Controls display
 	virtual void ToggleFeatures() { showFeatures = !showFeatures; }			// Toggle Feature display
-	virtual void ToggleManual() { if (!isSplitScreen) { currentScene->toggleManual(); }; }
+	virtual void ToggleManual() {
+		if (!isSplitScreen) { currentScene->toggleManual(); }
+		else { scenes[controlledScene]->toggleManual(); }
+	}
 	// ------------------------------------------------------------------------------------------------------------------
 	// GENERAL METHODS
 	// ------------------------------------------------------------------------------------------------------------------

@@ -361,6 +361,11 @@ void VolcanoScene::DrawWater() {
 	glUniform1f(glGetUniformLocation(renderer->currentShader->GetProgram(),
 		"time"), time);
 
+	glUniform1i(glGetUniformLocation(renderer->currentShader->GetProgram(),
+		"cubeTex"), 4);
+
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
 
 	renderer->modelMatrix =
 		Matrix4::Translation(Vector3(-50*16, 40, -50*16)) *

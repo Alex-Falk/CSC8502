@@ -30,7 +30,11 @@ void main(void) {
 
 	vec3 normal 			= normalize(TBN * bump.rgb * 2.0 - 1.0);
 
-	fragColor[0] = diffuse;//texture(terrainTex, IN.texCoord);
+	vec3 incident 		= normalize ( IN.worldPos - cameraPos );
+	vec4 reflection 	= texture (cubeTex ,
+							reflect(incident ,normalize(normal)));
+
+	fragColor[0] = diffuse + reflection*.2;//texture(terrainTex, IN.texCoord);
 	fragColor[1] = vec4(normal.xyz*0.5 + 0.5, 1.0);
 	//fragColor.a = 0.98*fragColor.a;
 }
